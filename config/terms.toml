@@ -1,0 +1,209 @@
+# Terms tracked on Twitter. Queries are byte-identical to the bot tracker's config/sources.toml,
+# so series keys line up with imported history. Precision, n and 95% interval come from the
+# bot tracker's hand-checked sample (docs/research/precision-2026-11-16.json). A family term
+# needs precision >= 0.70; context terms are shown but never in a family.
+
+[probe]
+# Always matches plenty of English posts; zero means Twitter is failing, not quiet.
+query = "(thing OR any OR tell)"
+
+[[term]]
+id = "troon"
+label = "troon(s)"
+family = "anti-trans"
+query = "(troon OR troons)"
+source = 'GLAAD, Guide to Anti-LGBTQ Online Hate and Disinformation, entry "Tranny / Troon"'
+source_url = "https://glaad.org/smsi/anti-lgbtq-online-hate-speech-disinformation-guide/"
+precision = 0.83
+precision_n = 47
+precision_ci = [0.699, 0.911]
+added = "2026-11-17"
+
+[[term]]
+id = "no-such-thing-as-trans"
+label = "no such thing as (a) trans"
+family = "anti-trans"
+query = '("no such thing as trans" OR "no such thing as a trans")'
+source = "The 74, 14 Dec 2023"
+source_url = "https://www.the74million.org/article/in-private-texts-ny-ed-council-reps-congressional-candidate-demean-lgbtq-kids/"
+precision = 0.96
+precision_n = 50
+precision_ci = [0.865, 0.989]
+added = "2026-11-17"
+
+[[term]]
+id = "ywnbaw"
+label = "you will never be a (real) woman"
+family = "anti-trans"
+query = '''("you will never be a woman" OR "you'll never be a woman" OR "you will never be a real woman" OR "you'll never be a real woman" OR YWNBAW OR YWNBARW)'''
+source = "Know Your Meme, You Will Never Be A Real Woman"
+source_url = "https://knowyourmeme.com/memes/you-will-never-be-a-real-woman"
+precision = 0.82
+precision_n = 50
+precision_ci = [0.692, 0.902]
+added = "2026-11-17"
+
+[[term]]
+id = "tranny"
+label = "tranny / trannies"
+family = "anti-trans"
+query = "(tranny OR trannies OR trannys)"
+source = "GLAAD, Guide to Anti-LGBTQ Online Hate and Disinformation"
+source_url = "https://glaad.org/smsi/anti-lgbtq-online-hate-speech-disinformation-guide/"
+precision = 0.826
+precision_n = 46
+precision_ci = [0.693, 0.909]
+added = "2026-11-17"
+
+[[term]]
+id = "trans-identified-male"
+label = "trans identified male(s)"
+family = "anti-trans"
+query = '("trans identified male" OR "trans identified males" OR "trans-identified male" OR "trans-identified males")'
+source = "TIDEs codebook (Lameiro et al., FAccT 2025); Mendelsohn et al. 2023 glossary"
+source_url = "https://rationalwiki.org/wiki/TERF_glossary"
+precision = 0.94
+precision_n = 50
+precision_ci = [0.838, 0.979]
+added = "2026-11-17"
+
+[[term]]
+id = "autogynephilia"
+label = "autogynephilia"
+family = "anti-trans"
+query = "(autogynephilia OR autogynephile OR autogynephiles OR autogynephilic)"
+source = "Mendelsohn et al. 2023 glossary; cites the RationalWiki TERF glossary"
+source_url = "https://rationalwiki.org/wiki/TERF_glossary"
+precision = 0.837
+precision_n = 49
+precision_ci = [0.71, 0.915]
+added = "2026-11-17"
+
+[[term]]
+id = "womanface"
+label = "womanface"
+family = "anti-trans"
+query = "womanface"
+source = "GLAAD, Guide to Anti-LGBTQ Online Hate and Disinformation"
+source_url = "https://glaad.org/smsi/anti-lgbtq-online-hate-speech-disinformation-guide/"
+precision = 0.796
+precision_n = 49
+precision_ci = [0.664, 0.885]
+added = "2026-11-17"
+
+[[term]]
+id = "trantifa"
+label = "Trantifa"
+family = "anti-trans"
+query = "Trantifa"
+source = "Transitics, Aleksandra Vaca, 11 Feb 2026"
+source_url = "https://www.transiticsnews.com/p/conservatives-escalate-false-claims"
+precision = 0.86
+precision_n = 50
+precision_ci = [0.738, 0.93]
+added = "2026-11-17"
+
+[[term]]
+id = "trans-ideology"
+label = "trans / transgender ideology"
+family = "framing"
+query = '("transgender ideology" OR "trans ideology")'
+source = "GLAAD, Guide to Anti-LGBTQ Online Hate and Disinformation"
+source_url = "https://glaad.org/smsi/anti-lgbtq-online-hate-speech-disinformation-guide/"
+precision = 0.776
+precision_n = 49
+precision_ci = [0.641, 0.87]
+added = "2026-11-17"
+
+[[term]]
+id = "transgenderism"
+label = "transgenderism"
+family = "framing"
+query = "transgenderism"
+source = 'GLAAD, Guide to Anti-LGBTQ Online Hate and Disinformation, entry "Transgenderism"'
+source_url = "https://glaad.org/smsi/anti-lgbtq-online-hate-speech-disinformation-guide/"
+precision = 0.755
+precision_n = 49
+precision_ci = [0.619, 0.854]
+added = "2026-11-17"
+
+[[term]]
+id = "trans-agenda"
+label = "trans agenda"
+family = "framing"
+query = '"trans agenda"'
+source = "GLAAD, Guide to Anti-LGBTQ Online Hate and Disinformation"
+source_url = "https://glaad.org/smsi/anti-lgbtq-online-hate-speech-disinformation-guide/"
+precision = 0.7
+precision_n = 50
+precision_ci = [0.562, 0.809]
+added = "2026-11-17"
+
+[[term]]
+id = "biological-male"
+label = "biological male / man"
+family = "framing"
+query = '("biological male" OR "biological males" OR "biological man" OR "biological men")'
+source = 'GLAAD, Guide to Anti-LGBTQ Online Hate and Disinformation, entry "Biological Male"'
+source_url = "https://glaad.org/smsi/anti-lgbtq-online-hate-speech-disinformation-guide/"
+precision = 0.857
+precision_n = 49
+precision_ci = [0.733, 0.929]
+added = "2026-11-17"
+
+[[term]]
+id = "adult-human-female"
+label = "adult human female"
+family = "framing"
+query = '"adult human female"'
+source = "Mendelsohn et al. 2023 glossary; cites the RationalWiki TERF glossary"
+source_url = "https://rationalwiki.org/wiki/TERF_glossary"
+precision = 0.833
+precision_n = 48
+precision_ci = [0.704, 0.913]
+added = "2026-11-17"
+
+[[term]]
+id = "men-in-womens-sports"
+label = "men in women's sports"
+family = "framing"
+query = '''("men in women's sports" OR "boys in girls' sports" OR "males in women's sports")'''
+source = "Erin in the Morning, Erin Reed, 11 Oct 2024"
+source_url = "https://www.erininthemorning.com/p/tx-dem-collin-allred-responds-to"
+precision = 0.72
+precision_n = 50
+precision_ci = [0.583, 0.825]
+added = "2026-11-17"
+
+[[term]]
+id = "child-mutilation"
+label = "child mutilation"
+family = "framing"
+query = '("mutilating children" OR "child mutilation" OR "mutilate children" OR "mutilating kids")'
+source = "GLAAD, Guide to Anti-LGBTQ Online Hate and Disinformation"
+source_url = "https://glaad.org/smsi/anti-lgbtq-online-hate-speech-disinformation-guide/"
+precision = 0.8
+precision_n = 50
+precision_ci = [0.67, 0.888]
+added = "2026-11-17"
+
+[[term]]
+id = "transing-kids"
+label = "transing kids"
+family = "framing"
+query = '("transing kids" OR "transing children" OR "transing the kids" OR "trans the kids")'
+source = "GLAAD, Guide to Anti-LGBTQ Online Hate and Disinformation"
+source_url = "https://glaad.org/smsi/anti-lgbtq-online-hate-speech-disinformation-guide/"
+precision = 0.78
+precision_n = 50
+precision_ci = [0.648, 0.872]
+added = "2026-11-17"
+
+[[term]]
+id = "trans-youth"
+label = "trans youth"
+family = "context"
+query = '"trans youth"'
+source = "DFRLab, Doppelganger, Sept 2024"
+source_url = "https://dfrlab.org/2024/09/18/doppelganger-us-election/"
+added = "2026-11-17"
