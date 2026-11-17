@@ -1,1 +1,7 @@
 .superpowers/
+data/
+site/
+.env
+.venv/
+__pycache__/
+*.egg-info/
