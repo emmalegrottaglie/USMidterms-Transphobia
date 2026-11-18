@@ -1,0 +1,3 @@
+# The design-system folder is a byte-for-byte copy of the canonical one in the Bot Traffic
+# Monitor (tests/test_scaffold.py checks it). Never convert its line endings on checkout.
+terminal-design-system/** -text
