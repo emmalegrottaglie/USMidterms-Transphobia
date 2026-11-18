@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import subprocess
 import sys
 import tempfile
 import time
@@ -171,14 +172,26 @@ def main(argv: list[str] | None = None, config: Config | None = None, settings: 
         return 0
 
     if args.cmd in ("export", "publish"):
-        out = args.out or Path(tempfile.mkdtemp(prefix="monitor-site-"))
-        with db.session(settings.db_path) as conn:
-            db.init(conn, config.series)
-            static.export(conn, config, settings, out, now, cdir, studies_dir)
-        print(f"exported to {out}")
-        if args.cmd == "publish" and not args.no_push:
-            static.push(out, static.default_remote())
-            print("pushed to gh-pages")
+        temp = args.cmd == "publish" and not args.out
+        out = Path(tempfile.mkdtemp(prefix="monitor-site-")) if temp else args.out
+        try:
+            with db.session(settings.db_path) as conn:
+                db.init(conn, config.series)
+                static.export(conn, config, settings, out, now, cdir, studies_dir)
+            print(f"exported to {out}")
+            if args.cmd == "publish" and not args.no_push:
+                static.push(out, static.default_remote())
+                print("pushed to gh-pages")
+        except (ValueError, subprocess.CalledProcessError) as e:
+            detail = (e.stderr or "").strip() if isinstance(e, subprocess.CalledProcessError) else ""
+            print(f"{args.cmd} failed: {e}", file=sys.stderr)
+            if detail:
+                print(detail, file=sys.stderr)
+            if temp:
+                print(f"the exported folder was kept at {out}", file=sys.stderr)
+            return 1
+        if temp and not args.no_push:
+            static._rmtree(out)
         return 0
 
     if args.cmd == "pause":

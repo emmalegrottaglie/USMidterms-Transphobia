@@ -2,12 +2,13 @@ import csv
 import json
 import shutil
 import subprocess
+from pathlib import Path
 
 from test_pause import config_copy, settings_for
 from test_study import HOUR, make_config, new_db, populate, ts
 
 from monitor import __main__ as cli
-from monitor import db, static, study
+from monitor import ROOT, db, static, study
 
 NOW = ts("2026-11-20")
 
@@ -151,10 +152,113 @@ def test_push_force_pushes_one_commit_to_a_local_bare_repo(tmp_path, monkeypatch
     subprocess.run(["git", "init", "-q", "--bare", str(bare)], check=True)
     for n in (1, 2):  # two publishes: the branch is replaced, not extended
         out = tmp_path / "site"
-        shutil.rmtree(out, onerror=static._clear_readonly) if out.exists() else None
+        if out.exists():
+            static._rmtree(out)
         out.mkdir()
         (out / "f.txt").write_text(str(n), encoding="utf-8")
         static.push(out, str(bare))
     count = subprocess.run(["git", "--git-dir", str(bare), "rev-list", "--count", "gh-pages"],
                            capture_output=True, text=True, check=True).stdout.strip()
     assert count == "1"
+
+
+def run_cli(tmp_path, argv, cdir=None):
+    cfg, st = make_config(), settings_for(tmp_path)
+    return cli.main(argv, config=cfg, settings=st, config_dir=cdir or config_copy(tmp_path),
+                    studies_dir=tmp_path / "studies")
+
+
+def test_out_dot_is_refused_and_nothing_deleted(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(ROOT)
+    assert run_cli(tmp_path, ["export", "--out", "."]) == 1
+    assert "refusing" in capsys.readouterr().err
+    assert (ROOT / "monitor" / "static.py").exists() and (ROOT / ".git").exists()
+
+
+def test_out_inside_project_folders_is_refused(tmp_path, capsys):
+    for name in ("web", "config", "monitor"):
+        assert run_cli(tmp_path, ["export", "--out", str(ROOT / name)]) == 1
+        assert "refusing" in capsys.readouterr().err
+    assert (ROOT / "config" / "terms.toml").exists()
+    assert not (ROOT / "web").exists() or (ROOT / "web").is_dir()
+
+
+def test_out_overlapping_the_database_folder_is_refused(tmp_path):
+    cfg, st = make_config(), settings_for(tmp_path)
+    conn = new_db(tmp_path, cfg)
+    for bad in (st.db_path.parent, tmp_path):
+        try:
+            static.export(conn, cfg, st, bad, NOW, config_copy(tmp_path), tmp_path / "studies")
+        except ValueError as e:
+            assert "refusing" in str(e)
+        else:
+            raise AssertionError("export was not refused")
+    assert (tmp_path / "m.db").exists()
+
+
+def test_non_empty_unmarked_folder_is_refused(tmp_path, capsys):
+    out = tmp_path / "mine"
+    out.mkdir()
+    (out / "keep.txt").write_text("x", encoding="utf-8")
+    assert run_cli(tmp_path, ["export", "--out", str(out)]) == 1
+    assert "refusing" in capsys.readouterr().err
+    assert (out / "keep.txt").exists()
+
+
+def test_empty_folder_and_re_export_are_allowed(tmp_path):
+    out = tmp_path / "site"
+    out.mkdir()
+    assert run_cli(tmp_path, ["export", "--out", str(out)]) == 0
+    assert (out / static.MARKER).exists()
+    (out / "stale.txt").write_text("x", encoding="utf-8")
+    assert run_cli(tmp_path, ["export", "--out", str(out)]) == 0
+    assert not (out / "stale.txt").exists() and (out / static.MARKER).exists()
+
+
+def test_missing_event_is_reported_not_a_traceback(tmp_path, capsys):
+    cdir = config_copy(tmp_path)
+    (cdir / "events.toml").write_text("", encoding="utf-8")
+    assert run_cli(tmp_path, ["export", "--out", str(tmp_path / "site")], cdir) == 1
+    assert "ELECTION" in capsys.readouterr().err
+
+
+def test_publish_reports_git_errors_with_stderr(tmp_path, monkeypatch, capsys):
+    def boom(args, cwd):
+        raise subprocess.CalledProcessError(128, ["git"], stderr="fatal: no such remote")
+
+    monkeypatch.setattr(static, "_git", boom)
+    monkeypatch.setattr(static, "default_remote", lambda: "remote")
+    assert run_cli(tmp_path, ["publish"]) == 1
+    err = capsys.readouterr().err
+    assert "fatal: no such remote" in err and "monitor-site-" in err
+    kept = Path(err.split("kept at ")[1].split()[0])
+    assert kept.exists()  # kept on failure so the export is not lost
+    static._rmtree(kept)
+
+
+def test_publish_removes_its_temp_folder_after_a_push(tmp_path, monkeypatch, capsys):
+    pushed = []
+    monkeypatch.setattr(static, "default_remote", lambda: "remote")
+    monkeypatch.setattr(static, "push", lambda out, remote: pushed.append(out))
+    assert run_cli(tmp_path, ["publish"]) == 0
+    assert len(pushed) == 1 and not pushed[0].exists()
+
+
+def test_rejected_json_pins_all_rows_to_the_table():
+    rows = {r["term"]: r for r in static.rejected()["terms"]}
+    expected = {
+        "gender ideology": (254, 32, 50, 64, "pushback"),
+        "rare slurs and memes, pooled": (80, 24, 50, 48, '"erasing women" in other contexts'),
+        "trans shooter": (39, 24, 50, 48, "pushback, statistics"),
+        "social contagion": (97, 20, 46, 43, "anorexia, ADHD and other topics"),
+        "gender critical": (159, 16, 50, 32, "criticism of the movement"),
+        "groomer": (1630, 6, 50, 12, "pet grooming, abuse survivors"),
+        "super straight": (105, 1, 45, 2, "betting-slip spam"),
+        '"trans cult" / "gender cult"': (74, 43, 50, 86, "pushback"),
+    }
+    assert set(rows) == set(expected)
+    for term, (per_day, k, n, pct, other) in expected.items():
+        r = rows[term]
+        assert (r["posts_a_day_approx"], r["anti_trans_checked"], r["checked_n"], r["precision_pct"],
+                r["other_uses"]) == (per_day, k, n, pct, other), term
+        assert r["decision"] == ("held" if term.startswith('"trans cult') else "not added")

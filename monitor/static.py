@@ -80,6 +80,33 @@ def _rmtree(path: Path) -> None:
         shutil.rmtree(path, onerror=_clear_readonly)
 
 
+MARKER = ".monitor-export"
+PROTECTED = ("web", "config", "monitor", "tests", "studies", "terminal-design-system", "docs", ".git")
+
+
+def _inside(path: Path, parent: Path) -> bool:
+    return path == parent or parent in path.parents
+
+
+def _check_out(out: Path, settings: Settings) -> None:
+    """Refuse an output folder that would delete source, data or git history."""
+    target, root = out.resolve(), ROOT.resolve()
+    db_dir = settings.db_path.resolve().parent
+    if _inside(root, target):
+        raise ValueError(f"refusing to export to {out}: it is or contains the project folder")
+    for name in PROTECTED:
+        if _inside(target, root / name):
+            raise ValueError(f"refusing to export to {out}: it is inside the project's {name}/ folder")
+    if _inside(target, db_dir) or _inside(db_dir, target):
+        raise ValueError(f"refusing to export to {out}: it is or overlaps the database folder")
+    if target.exists():
+        if not target.is_dir():
+            raise ValueError(f"refusing to export to {out}: it is a file")
+        if any(target.iterdir()) and not (target / MARKER).exists():
+            raise ValueError(f"refusing to export to {out}: it is not empty and was not made by a previous "
+                             f"export (no {MARKER} file). Choose an empty or new folder.")
+
+
 def _median_daily(conn, key: str, lo: int, hi: int) -> float | None:
     days = analysis.daily_totals(db.points(conn, key, lo, hi))
     return round(statistics.median(days.values()), 2) if days else None
@@ -91,6 +118,7 @@ def export(conn: sqlite3.Connection, config: Config, settings: Settings, out: Pa
     now = now or int(time.time())
     cdir = config_dir or study.CONFIG_DIR
     web = web_dir or ROOT / "web"
+    _check_out(out, settings)
     if out.exists():
         _rmtree(out)
     if web.is_dir():
@@ -99,6 +127,7 @@ def export(conn: sqlite3.Connection, config: Config, settings: Settings, out: Pa
         out.mkdir(parents=True)
     (out / "design").mkdir(exist_ok=True)
     shutil.copy2(ROOT / "terminal-design-system" / "terminal.css", out / "design" / "terminal.css")
+    (out / MARKER).write_text("made by `python -m monitor export`; safe to replace", encoding="utf-8")
     (out / ".nojekyll").write_text("", encoding="utf-8")  # serve files as-is on GitHub Pages
     data = out / "data"
     data.mkdir(exist_ok=True)
