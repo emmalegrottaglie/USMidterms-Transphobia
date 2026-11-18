@@ -104,6 +104,18 @@ precision_ci = [0.738, 0.93]
 added = "2026-11-17"
 
 [[term]]
+id = "trans-cult"
+label = "trans cult / gender cult"
+family = "anti-trans"
+query = '("trans cult" OR "gender cult")'
+source = 'RationalWiki, TERF glossary, entry "Trans cult" (checked 18 November 2026)'
+source_url = "https://rationalwiki.org/wiki/TERF_glossary#Trans_cult"
+precision = 0.86
+precision_n = 50
+precision_ci = [0.738, 0.93]
+added = "2026-11-18"
+
+[[term]]
 id = "trans-ideology"
 label = "trans / transgender ideology"
 family = "framing"

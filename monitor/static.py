@@ -32,7 +32,8 @@ log = logging.getLogger(__name__)
 SOURCE_NOTE = "Precision checks, 16 November 2026, Bot Traffic Monitor docs/NARRATIVES.md"
 THRESHOLD_REASON = "Hand-checked precision is below the 70% threshold, so the term is not tracked."
 
-# Terms screened and not added (precision run of 16 November 2026), plus one held term.
+# Terms screened and not added (precision run of 16 November 2026). "trans cult" / "gender cult",
+# held until a source was checked, is tracked since 18 November 2026.
 REJECTED = [
     ("gender ideology", 254, 32, 50, "pushback"),
     ("rare slurs and memes, pooled", 80, 24, 50, '"erasing women" in other contexts'),
@@ -42,7 +43,6 @@ REJECTED = [
     ("groomer", 1630, 6, 50, "pet grooming, abuse survivors"),
     ("super straight", 105, 1, 45, "betting-slip spam"),
 ]
-HELD = ('"trans cult" / "gender cult"', 74, 43, 50, "pushback")
 
 
 def _row(term: str, per_day: int, k: int, n: int, other: str, decision: str, reason: str) -> dict:
@@ -52,9 +52,6 @@ def _row(term: str, per_day: int, k: int, n: int, other: str, decision: str, rea
 
 def rejected() -> dict:
     rows = [_row(t, p, k, n, o, "not added", THRESHOLD_REASON) for t, p, k, n, o in REJECTED]
-    t, p, k, n, o = HELD
-    rows.append(_row(t, p, k, n, o, "held",
-                     "Precision is above the threshold, but no source has been checked for the term yet."))
     return {"source": SOURCE_NOTE, "run": "2026-11-16", "terms": rows}
 
 

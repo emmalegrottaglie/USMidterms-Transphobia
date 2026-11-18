@@ -23,7 +23,7 @@ def test_terms_and_families():
     by_family = {}
     for t in cfg.terms:
         by_family.setdefault(t.family, []).append(t)
-    assert len(by_family["anti-trans"]) == 8
+    assert len(by_family["anti-trans"]) == 9
     assert len(by_family["framing"]) == 8
     assert len(by_family["context"]) == 1
     for t in cfg.terms:
@@ -78,3 +78,13 @@ def test_family_query_too_long_raises(tmp_path):
 def test_term_below_threshold_rejected(tmp_path):
     with pytest.raises(ValueError):
         load_config(_write(tmp_path, _term("low", "framing", "lowterm", 0.69)))
+
+
+def test_trans_cult_is_tracked_with_its_checked_source():
+    cfg = load_config()
+    t = {x.id: x for x in cfg.terms}["trans-cult"]
+    assert t.family == "anti-trans" and t.query == '("trans cult" OR "gender cult")'
+    assert (t.precision, t.precision_n, t.precision_ci) == (0.86, 50, (0.738, 0.93)) or \
+        (t.precision, t.precision_n, list(t.precision_ci)) == (0.86, 50, [0.738, 0.93])
+    assert "rationalwiki.org/wiki/TERF_glossary" in t.source_url and "Trans cult" in t.source
+    assert '"trans cult"' in cfg.family_queries["anti-trans"]

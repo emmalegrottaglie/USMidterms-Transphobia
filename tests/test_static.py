@@ -112,13 +112,12 @@ def test_rejected_json_content(tmp_path):
     r = json.loads((out / "data" / "rejected.json").read_text(encoding="utf-8"))
     assert "Bot Traffic Monitor docs/NARRATIVES.md" in r["source"]
     by = {t["term"]: t for t in r["terms"]}
-    assert len(r["terms"]) == 8
+    assert len(r["terms"]) == 7
     g = by["groomer"]
     assert (g["posts_a_day_approx"], g["anti_trans_checked"], g["checked_n"], g["precision_pct"]) == (1630, 6, 50, 12)
     assert g["decision"] == "not added" and g["reason"]
     assert by["social contagion"]["precision_pct"] == 43
-    held = by['"trans cult" / "gender cult"']
-    assert held["decision"] == "held" and held["precision_pct"] == 86
+    assert '"trans cult" / "gender cult"' not in by  # tracked since 18 November 2026
 
 
 def test_export_without_a_web_folder(tmp_path):
@@ -269,14 +268,13 @@ def test_rejected_json_pins_all_rows_to_the_table():
         "gender critical": (159, 16, 50, 32, "criticism of the movement"),
         "groomer": (1630, 6, 50, 12, "pet grooming, abuse survivors"),
         "super straight": (105, 1, 45, 2, "betting-slip spam"),
-        '"trans cult" / "gender cult"': (74, 43, 50, 86, "pushback"),
     }
     assert set(rows) == set(expected)
     for term, (per_day, k, n, pct, other) in expected.items():
         r = rows[term]
         assert (r["posts_a_day_approx"], r["anti_trans_checked"], r["checked_n"], r["precision_pct"],
                 r["other_uses"]) == (per_day, k, n, pct, other), term
-        assert r["decision"] == ("held" if term.startswith('"trans cult') else "not added")
+        assert r["decision"] == "not added"
 
 
 def test_export_copies_the_citation_file(tmp_path):
