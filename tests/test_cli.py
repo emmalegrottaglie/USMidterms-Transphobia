@@ -121,3 +121,91 @@ def test_pause_and_resume_commands(tmp_path):
                      "--event-label", "A hearing", "--event-source", "C-SPAN"], config=cfg, settings=st,
                     config_dir=cdir) == 0
     assert pause.state(st) is None and study.get("hearing-2027-01-06", cdir)
+
+
+def future_study(cdir):
+    return pause.open_study({"date": "2099-01-01", "short": "FUTURE", "label": "Later", "source": "s",
+                             "status": "reported"}, cdir)
+
+
+def test_freeze_of_open_study_reports_error_without_traceback(tmp_path, capsys):
+    st, cfg, cdir = settings_for(tmp_path), make_config(), config_copy(tmp_path)
+    sid = future_study(cdir)
+    assert cli.main(["study", "build", sid, "--freeze", "--note", "n"], config=cfg, settings=st,
+                    config_dir=cdir, studies_dir=tmp_path / "s") == 1
+    assert "still open" in capsys.readouterr().err and not (tmp_path / "s").exists()
+
+
+def broken_study(cdir):
+    with (cdir / "studies.toml").open("a", encoding="utf-8") as f:
+        f.write('\n[[study]]\nid = "broken"\ntitle = "t"\nevents = ["NOPE"]\n')
+
+
+def test_missing_event_is_reported_by_build_and_close_if_done(tmp_path, capsys):
+    st, cfg, cdir = settings_for(tmp_path), make_config(), config_copy(tmp_path)
+    broken_study(cdir)
+    assert cli.main(["study", "build"], config=cfg, settings=st, config_dir=cdir) == 1
+    assert "NOPE" in capsys.readouterr().err
+    assert cli.main(["close-if-done"], config=cfg, settings=st, config_dir=cdir) == 1
+    assert "NOPE" in capsys.readouterr().err
+
+
+def test_collect_keeps_pass_and_reports_missing_event(tmp_path, monkeypatch, capsys):
+    st, cfg, cdir, calls = settings_for(tmp_path), make_config(), config_copy(tmp_path), []
+    broken_study(cdir)
+
+    async def fake_run(config, settings, now):
+        calls.append(now)
+
+    monkeypatch.setattr(x, "run", fake_run)
+    assert cli.main(["collect"], config=cfg, settings=st, config_dir=cdir) == 0
+    assert len(calls) == 1 and "NOPE" in capsys.readouterr().err
+
+
+def test_collect_treats_unreadable_pause_file_as_paused(tmp_path, monkeypatch, capsys):
+    st, cfg = settings_for(tmp_path), make_config()
+    monkeypatch.setattr(x, "run", no_request)
+    st.db_path.parent.mkdir(parents=True)
+    for bad in ("{not json", "[]", '{"since": 1}'):
+        (st.db_path.parent / "pause.json").write_text(bad, encoding="utf-8")
+        assert cli.main(["collect"], config=cfg, settings=st, config_dir=config_copy(tmp_path)) == 0
+        assert "unreadable" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("args", [
+    ["backfill", "--from", "2026-11-01T00:00:00"],
+    ["backfill", "--from", "2026-11-01", "--to", "2026-11-03+01:00"],
+    ["backfill", "--from", "20261101"],
+    ["backfill", "--from", "2026-11-05", "--to", "2026-11-04"],
+    ["pause", "--reason", "  "],
+    ["resume", "--reason", "r", "--event-date", "2027-01-06T10:00", "--event-short", "S",
+     "--event-label", "L", "--event-source", "src"],
+    ["resume", "--reason", "r", "--event-date", "2027-01-06", "--event-short", "S",
+     "--event-label", "L", "--event-source", ""],
+    ["resume", "--reason", "r", "--event-date", "2027-01-06", "--event-short", " ",
+     "--event-label", "L", "--event-source", "src"],
+    ["resume", "--reason", "r", "--event-date", "2027-01-06", "--event-short", "S",
+     "--event-label", "", "--event-source", "src"],
+    ["study", "build", "--freeze", "--note", " "],
+])
+def test_bad_arguments_are_refused_cleanly(tmp_path, monkeypatch, args):
+    st, cfg, cdir = settings_for(tmp_path), make_config(), config_copy(tmp_path)
+    monkeypatch.setattr(x, "backfill", no_request)
+    before = (cdir / "events.toml").read_text(encoding="utf-8")
+    with pytest.raises(SystemExit) as e:
+        cli.main(args, config=cfg, settings=st, config_dir=cdir, studies_dir=tmp_path / "s")
+    assert e.value.code == 2
+    assert (cdir / "events.toml").read_text(encoding="utf-8") == before and pause.state(st) is None
+
+
+def test_backfill_same_day_range_is_one_day(tmp_path, monkeypatch):
+    st, cfg, seen = settings_for(tmp_path), make_config(), {}
+
+    async def fake(config, settings, s, e=None, missing_before=False):
+        seen.update(s=s, e=e)
+        return {}
+
+    monkeypatch.setattr(x, "backfill", fake)
+    cli.main(["backfill", "--from", "2026-11-03", "--to", "2026-11-03"], config=cfg, settings=st,
+             config_dir=config_copy(tmp_path))
+    assert seen["e"] - seen["s"] == 86400

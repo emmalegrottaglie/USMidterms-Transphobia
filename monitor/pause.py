@@ -29,11 +29,20 @@ def path(settings: Settings) -> Path:
 
 
 def state(settings: Settings) -> dict | None:
-    """The pause record ({"since", "reason"}) or None when collecting."""
-    try:
-        return json.loads(path(settings).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    """The pause record ({"since", "reason"}) or None when collecting. A missing file means
+    collecting; a file that exists but cannot be read or parsed, or is not a record with a
+    reason, counts as paused (fail closed), so a damaged file never restarts paid collection."""
+    p = path(settings)
+    if not p.exists():
         return None
+    try:
+        record = json.loads(p.read_text(encoding="utf-8"))
+        if isinstance(record, dict) and str(record.get("reason", "")).strip():
+            return record
+        why = "it is not a record with a reason"
+    except (OSError, ValueError) as e:
+        why = f"{type(e).__name__}"
+    return {"since": 0, "reason": f"the pause file {p} is unreadable ({why}); fix or delete it to resume"}
 
 
 def pause(settings: Settings, reason: str, now: int | None = None) -> dict:
@@ -104,6 +113,8 @@ def close_if_done(conn, config: Config, now: int | None = None, settings: Settin
     built = studies.build(conn, config, s, now, config_dir)
     last_day = f["end"] + 1 - DAY
     have = {sp.family for sp in config.series if sp.key.startswith("x.family.")}
+    if not have:
+        return None  # nothing to check the window against: never freeze an empty study
     if any(last_day not in built["families"][fam]["raw_daily"] for fam in FAMILIES if fam in have):
         return None
     studies.freeze(built, FREEZE_NOTE, studies_dir)

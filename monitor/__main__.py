@@ -10,7 +10,7 @@ import asyncio
 import logging
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from . import db, importer, pause, study
@@ -21,7 +21,17 @@ DAY = 86400
 
 
 def _date(text: str) -> int:
-    return int(datetime.fromisoformat(text).replace(tzinfo=timezone.utc).timestamp())
+    """UTC midnight of a strict YYYY-MM-DD date; time parts and offsets are rejected."""
+    if len(text) != 10:
+        raise ValueError(text)
+    d = date.fromisoformat(text)
+    return int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+
+
+def _require(parser, **fields: str) -> None:
+    for name, value in fields.items():
+        if not value.strip():
+            parser.error(f"{name} must not be empty")
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -78,8 +88,12 @@ def main(argv: list[str] | None = None, config: Config | None = None, settings: 
             print(f"collection is paused: {record['reason']}")
             return 0
         asyncio.run(x.run(config, settings, now))
-        with db.session(settings.db_path) as conn:
-            done = pause.close_if_done(conn, config, now, settings, cdir, studies_dir)
+        try:
+            with db.session(settings.db_path) as conn:
+                done = pause.close_if_done(conn, config, now, settings, cdir, studies_dir)
+        except ValueError as e:
+            print(f"could not check the study (the live pass is stored): {e}", file=sys.stderr)
+            return 0
         if done:
             print(f"froze study {done['id']} and paused collection")
         return 0
@@ -89,8 +103,8 @@ def main(argv: list[str] | None = None, config: Config | None = None, settings: 
             start = _date(args.start)
             end = _date(args.end) + DAY if args.end else None
         except ValueError:
-            parser.error("dates must be YYYY-MM-DD")
-        if end is not None and end <= start:
+            parser.error("--from and --to must be dates like 2026-11-03 (UTC, no time or offset)")
+        if end is not None and end <= start:  # --to is a whole day, so equal dates are fine; earlier is not
             parser.error("--to must not be before --from")
         try:
             results = asyncio.run(x.backfill(config, settings, start, end, args.missing_before))
@@ -126,32 +140,43 @@ def main(argv: list[str] | None = None, config: Config | None = None, settings: 
         return 0
 
     if args.cmd == "study":
-        if args.freeze and not args.note:
+        if args.freeze and not args.note.strip():
             parser.error("--freeze needs --note saying what this version is or changes")
         chosen = study.get(args.id, cdir)
         if chosen is None:
             parser.error(f"no study {args.id!r} in studies.toml" if args.id else "no study in studies.toml")
-        with db.session(settings.db_path) as conn:
-            db.init(conn, config.series)
-            built = study.build(conn, config, chosen, now, cdir)
+        try:
+            with db.session(settings.db_path) as conn:
+                db.init(conn, config.series)
+                built = study.build(conn, config, chosen, now, cdir)
+        except ValueError as e:
+            print(f"cannot build study {chosen.id}: {e}", file=sys.stderr)
+            return 1
         print(f"{chosen.id}: {'complete' if built['complete'] else 'window still open'}")
         for fam, info in built["families"].items():
             ph = info["phases"]
             print(f"  {fam}: before {ph['before']}  during {ph['during']}  after {ph['after']}")
         if args.freeze:
-            print(f"frozen: {study.freeze(built, args.note, studies_dir)}")
+            try:
+                print(f"frozen: {study.freeze(built, args.note, studies_dir)}")
+            except ValueError as e:
+                print(f"not frozen: {e}", file=sys.stderr)
+                return 1
         return 0
 
     if args.cmd == "pause":
+        _require(parser, **{"--reason": args.reason})
         pause.pause(settings, args.reason, now)
         print(f"paused: {args.reason}")
         return 0
 
     if args.cmd == "resume":
+        _require(parser, **{"--reason": args.reason, "--event-short": args.event_short,
+                            "--event-label": args.event_label, "--event-source": args.event_source})
         try:
             _date(args.event_date)
         except ValueError:
-            parser.error("--event-date must be YYYY-MM-DD")
+            parser.error("--event-date must be a date like 2026-11-03 (UTC, no time or offset)")
         event = {"date": args.event_date, "short": args.event_short, "label": args.event_label,
                  "source": args.event_source, "status": args.event_status}
         opened = pause.resume(settings, args.reason, event, cdir)
@@ -159,9 +184,13 @@ def main(argv: list[str] | None = None, config: Config | None = None, settings: 
         return 0
 
     if args.cmd == "close-if-done":
-        with db.session(settings.db_path) as conn:
-            db.init(conn, config.series)
-            done = pause.close_if_done(conn, config, now, settings, cdir, studies_dir)
+        try:
+            with db.session(settings.db_path) as conn:
+                db.init(conn, config.series)
+                done = pause.close_if_done(conn, config, now, settings, cdir, studies_dir)
+        except ValueError as e:
+            print(f"cannot check the study: {e}", file=sys.stderr)
+            return 1
         print(f"froze study {done['id']} and paused collection" if done else "nothing to freeze")
         return 0
     return 2
