@@ -533,7 +533,7 @@ function renderMethods() {
     </ul>
 
     <h3 class="sect">Probe normalisation</h3>
-    ${p('Posting on Twitter rises and falls for reasons that have nothing to do with trans people: on election night far more people post about everything. So each count is divided by a probe, the number of English original posts containing “thing”, “any” or “tell”. These common words follow overall activity. The method follows Hickey et al. (PLOS ONE, 2025).')}
+    ${p('Posting on Twitter rises and falls for reasons that have nothing to do with trans people: on election night far more people post about everything. So each count is divided by a probe, the number of English original posts containing “thing”, “any” or “tell”. These common words follow overall activity. The probe words and the idea of using them as a baseline come from Hickey et al. (PLOS ONE, 2025), who used them to sample English Twitter and compared weekly hate volume with that baseline. Dividing each count by the probe is this site’s choice, not theirs.')}
     ${p('Each family’s headline is one combined search for all its terms, so a post that matches several terms counts once.')}
 
     <h3 class="sect">The index and the normal range</h3>
@@ -576,7 +576,7 @@ function renderMethods() {
     <h3 class="sect">References</h3>
     <ul class="notes refs">
       <li>Baker, S. R., Bloom, N. and Davis, S. J. (2016). Measuring economic policy uncertainty. The Quarterly Journal of Economics.</li>
-      <li>Hickey et al. (2025). PLOS ONE. The common-word probe used to normalise counts.</li>
+      <li>Hickey, D., Fessler, D. M. T., Lerman, K. and Burghardt, K. (2025). X under Musk’s leadership: Substantial hate and no reduction in inauthentic activity. PLoS ONE 20(2): e0313293. <a href="https://doi.org/10.1371/journal.pone.0313293" rel="noopener">https://doi.org/10.1371/journal.pone.0313293</a></li>
       <li>Lu, C. and Jurgens, D. (2022). The subtle language of exclusion: identifying the toxic speech of trans-exclusionary radical feminists. Workshop on Online Abuse and Harms (WOAH).</li>
       <li>Mendelsohn, J., Le Bras, R., Choi, Y. and Sap, M. (2023). From dogwhistles to bullhorns: unveiling coded rhetoric with language models. ACL.</li>
     </ul>`;
@@ -595,19 +595,20 @@ const CONTEXT_SOURCES = [
 ];
 const CONTEXT_GROUPS = [
   ['How much was spent', [
-    ['AdImpact, reported by AP', 'Republicans aired transgender-themed general-election ads about 217,000 times, for an estimated $183M up to 25 October 2026. At the same point in 2024 the figure was about $151M. Democrats spent about $11M on trans-related ads.', 'ap'],
+    ['AdImpact, reported by AP', 'Republicans aired transgender-themed ads about 217,000 times, for an estimated $183M up to 25 October 2026. At the same point in the 2024 general election the figure was about $151M. Democrats spent about $11M on transgender-related ads.', 'ap'],
     ['Wesleyan Media Project', 'The release names attacks on transgender people as the tenth most common topic in pro-Republican House ads, in 14% of airings, from 1 January 2025 to 2 August 2026. Its Table 2 labels the matching row “LGBTQ Issues / Rights” (13.9%), listed about twelfth.', 'wmp'],
-    ['Metro Weekly', 'About $187M across nine states: Arizona, Colorado, Georgia, Missouri, Nebraska, Ohio, Texas, Washington and Wisconsin. The article names no data source for this figure. The Human Rights Campaign put the cycle’s anti-trans ad spending at nearly $400M.', 'metro'],
+    ['Metro Weekly', 'About $187M across nine states: Arizona, Colorado, Georgia, Missouri, Nebraska, Ohio, Texas, Washington and Wisconsin. The article names no data source for this figure.', 'metro'],
+    ['Human Rights Campaign estimate, reported by Metro Weekly', 'The Human Rights Campaign estimated that “nearly $400 million was spent nationwide on anti-transgender ads this election cycle”. This is a separate estimate with a different scope from the nine-state figure above; the two are not compared or added.', 'metro'],
   ]],
   ['Who paid, and where', [
-    ['Texas Senate race', 'About $58M and more than 50,000 airings of trans-themed ads up to 25 October 2026 (AdImpact, reported by AP). AP describes Texas PAC as largely funded by Elon Musk.', 'ap'],
+    ['Texas Senate race', 'Transgender-themed ads aired an estimated 50,000 times, at a cost of $58M, up to 25 October 2026 (AdImpact, reported by AP). AP describes Texas PAC as largely funded by Elon Musk.', 'ap'],
     ['Musk, Senate Leadership Fund, Texas PAC', 'Musk gave the Senate Leadership Fund $75M on 9 September and $83M on 23 September 2026. The fund gave Texas PAC $75M on 10 September and $83M on 24 September.', 'cnn'],
     ['Ohio Senate race', 'AP gives nearly $26M as the cost of all attacks on Sherrod Brown by Republican groups led by the Senate Leadership Fund, not by the fund alone.', 'ap'],
     ['America PAC', 'Citing The New York Times, The Advocate reported that each of America PAC’s initial midterm ads focused on transgender issues. They targeted Talarico, Brown, Turek and Peltola. The ads were reported on 8 and 9 September 2026.', 'advocate'],
     ['America PAC spending', 'More than $3.7M on mostly digital or streaming ads as of 23 September 2026 (AdImpact). FactCheck.org says a number of these ads attacked candidates on transgender issues.', 'factcheck'],
   ]],
   ['Voters', [
-    ['GLAAD and Morning Consult poll, advocacy-commissioned', '2,026 registered voters were asked on 4 to 6 November 2026; 1,725 of them voted in the midterms. Of those voters, 37% said they were less likely and 18% more likely to support a candidate who ran ads about transgender issues.', 'metro'],
+    ['GLAAD and Morning Consult poll', '2,026 registered voters were asked on 4 to 6 November 2026; 1,725 of them voted in the midterms. Of those voters, 37% said they were less likely and 18% more likely to support a candidate who ran ads about transgender issues.', 'metro'],
   ]],
 ];
 
