@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software or its data, please cite it as below."
+title: "Anti-trans rhetoric monitor"
+type: software
+authors:
+  - family-names: Legrottaglie
+    given-names: Emma
+repository-code: "https://github.com/emmalegrottaglie/USMidterms-Transphobia"
+url: "https://emmalegrottaglie.github.io/USMidterms-Transphobia/"

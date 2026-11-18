@@ -1,6 +1,6 @@
 """Command line: python -m monitor {collect,backfill,import-tracker,study,pause,resume,close-if-done}
 
-`export` and `publish` are added by the static-site task (monitor/static.py).
+`export` and `publish` are implemented in monitor/static.py.
 """
 
 from __future__ import annotations
@@ -9,11 +9,12 @@ import argparse
 import asyncio
 import logging
 import sys
+import tempfile
 import time
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from . import db, importer, pause, study
+from . import db, importer, pause, static, study
 from .collectors import x
 from .config import Config, Settings, load_config
 
@@ -55,7 +56,12 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--freeze", action="store_true", help="store the build as the study's next version")
     p.add_argument("--note", default="", help="what this version is or changes (required with --freeze)")
 
-    # export and publish (Task 9) go here.
+    p = sub.add_parser("export", help="write the static site and data downloads to a folder")
+    p.add_argument("--out", required=True, type=Path)
+
+    p = sub.add_parser("publish", help="export, then force-push the folder to the gh-pages branch")
+    p.add_argument("--no-push", action="store_true", help="export only; do not touch git")
+    p.add_argument("--out", type=Path, help="folder to export to (default: a temporary folder)")
 
     p = sub.add_parser("pause", help="stop collecting until the next event")
     p.add_argument("--reason", required=True)
@@ -162,6 +168,17 @@ def main(argv: list[str] | None = None, config: Config | None = None, settings: 
             except ValueError as e:
                 print(f"not frozen: {e}", file=sys.stderr)
                 return 1
+        return 0
+
+    if args.cmd in ("export", "publish"):
+        out = args.out or Path(tempfile.mkdtemp(prefix="monitor-site-"))
+        with db.session(settings.db_path) as conn:
+            db.init(conn, config.series)
+            static.export(conn, config, settings, out, now, cdir, studies_dir)
+        print(f"exported to {out}")
+        if args.cmd == "publish" and not args.no_push:
+            static.push(out, static.default_remote())
+            print("pushed to gh-pages")
         return 0
 
     if args.cmd == "pause":
