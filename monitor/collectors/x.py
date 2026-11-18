@@ -70,9 +70,12 @@ def _ts(stamp: str) -> int:
 
 def buckets(payload: dict) -> dict[int, int]:
     """{bucket_start: count} from a counts response."""
-    if payload.get("errors") and not payload.get("data"):
-        raise ValueError(payload["errors"][0].get("message", "error"))
-    return {_ts(d["start"]): int(d["tweet_count"]) for d in payload.get("data") or []}
+    try:
+        if payload.get("errors") and not payload.get("data"):
+            raise ValueError(payload["errors"][0].get("message", "error"))
+        return {_ts(d["start"]): int(d["tweet_count"]) for d in payload.get("data") or []}
+    except (KeyError, TypeError, IndexError, AttributeError) as e:  # a malformed body is an error, not a crash
+        raise ValueError(f"malformed counts response ({type(e).__name__})") from e
 
 
 def metrics(orig: dict[int, int], rt: dict[int, int], reply: dict[int, int],
@@ -152,7 +155,8 @@ async def _pass(client: httpx.AsyncClient, budget: Budget, settings: Settings, p
     groups: dict[tuple[str, bool], list[SeriesSpec]] = defaultdict(list)
     for s in specs:  # one set of requests per query: a term shares three, any other series one
         groups[(s.query, s.term_id is not None)].append(s)
-    for (query, is_term), group in groups.items():
+    # The probe first: it is already paid for, so it is kept even if the budget runs out later.
+    for (query, is_term), group in sorted(groups.items(), key=lambda kv: kv[1][0].family != "probe"):
         try:
             if is_term:
                 u = url_for(group[0])
@@ -191,8 +195,8 @@ async def collect(client: httpx.AsyncClient, config: Config, settings: Settings,
 async def backfill(config: Config, settings: Settings, start: int, end: int | None = None,
                    missing_before: bool = False, client: httpx.AsyncClient | None = None) -> dict[str, Result]:
     """Full-archive history from `start` to `end` (default: now), one Result per keyword, keyed
-    by its query. With `missing_before`, a keyword window ends at its earliest stored point,
-    and a keyword already stored back to `start` is skipped. Data only; the caller writes it.
+    by its query. With `missing_before`, a keyword window ends where its earliest stored hour starts,
+    and a keyword already stored back to `start` is skipped without any request. Data only; the caller writes it.
     `client` is optional: tests pass one built on httpx.MockTransport; by default a real one is
     opened and closed here."""
     if not settings.x_bearer_token:
@@ -213,7 +217,8 @@ async def backfill(config: Config, settings: Settings, start: int, end: int | No
                     db.init(conn, config.series)
                     ranges = [r for r in (db.point_range(conn, s.key) for s in specs) if r]
                 if ranges:
-                    earliest = min(r[0] for r in ranges)
+                    # Stored stamps are hour ends: the earliest stored hour starts an hour before.
+                    earliest = min(r[0] for r in ranges) - HOUR
                     if earliest <= start:
                         continue
                     stop_at = earliest if end is None else min(end, earliest)

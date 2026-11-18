@@ -1,4 +1,5 @@
 import asyncio
+import json
 import time
 from datetime import datetime, timezone
 
@@ -49,7 +50,7 @@ class Twitter:
         q = request.url.params
         self.requests.append((request.url.path, dict(q)))
         query = q["query"]
-        if self.fail_for and self.fail_for in query:
+        if self.fail_for and query.startswith(self.fail_for):  # the family query starts "((", so it does not match
             return httpx.Response(503, text="unavailable")
         start, end = _parse(q["start_time"]), _parse(q["end_time"])
         hours = list(range(start, end, HOUR))
@@ -133,7 +134,7 @@ def test_probe_gap_applies_to_live_recent_terms(tmp_path):
 
 def test_failed_request_records_error_not_zero(tmp_path):
     cfg = _config(tmp_path, "alpha", "beta")
-    result = asyncio.run(_collect(Twitter(fail_for="alpha"), cfg, _settings(tmp_path),
+    result = asyncio.run(_collect(Twitter(fail_for="(alpha"), cfg, _settings(tmp_path),
                                   now=H0 + 10 * HOUR, start=H0, end=H0 + 3 * HOUR))
     assert not any(k.startswith("x.alpha") for k in result.points)
     assert any("alpha" in e for e in result.errors)
@@ -142,7 +143,7 @@ def test_failed_request_records_error_not_zero(tmp_path):
 
 
 def test_failed_probe_writes_nothing(tmp_path):
-    cfg, tw = _config(tmp_path, "alpha"), Twitter(fail_for="thing")
+    cfg, tw = _config(tmp_path, "alpha"), Twitter(fail_for="(thing")
     result = asyncio.run(_collect(tw, cfg, _settings(tmp_path), now=H0 + 10 * HOUR, start=H0, end=H0 + 3 * HOUR))
     assert result.points == {} and any("probe" in e.lower() for e in result.errors)
     assert len(tw.requests) == 1
@@ -157,6 +158,7 @@ def test_budget_exhausted_keeps_only_whole_keywords(tmp_path):
     assert not any(k.startswith("x.beta") for k in result.points)
     assert not any(k.startswith("x.family") for k in result.points)
     assert any("cap" in e and "5" in e for e in result.errors)
+    assert "x.probe.en.posts" in result.points  # paid for, so kept
 
 
 def test_paging_follows_next_token(tmp_path):
@@ -164,6 +166,8 @@ def test_paging_follows_next_token(tmp_path):
     result = asyncio.run(_collect(tw, cfg, _settings(tmp_path), now=H0 + 10 * HOUR, start=H0, end=H0 + 4 * HOUR))
     assert len(result.points["x.probe.en.posts"]) == 4
     assert any(q.get("next_token") == "abc" for _, q in tw.requests)
+    day = time.strftime("%Y-%m-%d", time.gmtime())
+    assert json.loads((tmp_path / "usage.json").read_text(encoding="utf-8"))[day] == len(tw.requests)  # one unit per page
 
 
 def test_lang_en_added_exactly_once():
@@ -176,7 +180,7 @@ def test_backfill_missing_before_stops_at_earliest_point(tmp_path):
     cfg, settings = _config(tmp_path, "alpha", "beta"), _settings(tmp_path)
     with db.session(settings.db_path) as conn:
         db.init(conn, cfg.series)
-        db.replace_hours(conn, "x.alpha-or-alphas.en.posts", [(H0, 1.0), (H0 + HOUR, 1.0)])  # earliest: 17 Sep 00:00
+        db.replace_hours(conn, "x.alpha-or-alphas.en.posts", [(H0 + HOUR, 1.0), (H0 + 2 * HOUR, 1.0)])  # first stored stamp 17 Sep 01:00, the end of the 00:00 hour
     start, end = H0 - 5 * HOUR, H0 + 30 * HOUR
     tw = Twitter()
 
@@ -221,3 +225,41 @@ def test_run_writes_points_and_records_run(tmp_path, monkeypatch):
         n = conn.execute("SELECT COUNT(*) FROM points WHERE key = 'x.alpha-or-alphas.en.posts'").fetchone()[0]
         run = conn.execute("SELECT platform, ok, points, error FROM runs").fetchone()
     assert n > 100 and run["platform"] == "twitter" and run["ok"] == 1 and run["points"] > n
+
+
+def test_backfill_skips_keyword_stored_up_to_start_plus_an_hour(tmp_path):
+    cfg, settings = _config(tmp_path, "alpha"), _settings(tmp_path)
+    with db.session(settings.db_path) as conn:
+        db.init(conn, cfg.series)
+        db.replace_hours(conn, "x.alpha-or-alphas.en.posts", [(H0 + HOUR, 1.0)])  # the hour starting at `start`
+    tw = Twitter()
+
+    async def go():
+        async with tw.client() as client:
+            return await x.backfill(cfg, settings, H0, end=H0 + 5 * HOUR, missing_before=True, client=client)
+
+    out = asyncio.run(go())
+    assert "(alpha OR alphas)" not in out
+    assert not any(q["query"].startswith("(alpha") for _, q in tw.requests)
+    # only the family and the probe (nothing stored) were requested, and each took one budget unit
+    day = time.strftime("%Y-%m-%d", time.gmtime())
+    assert json.loads((tmp_path / "usage.json").read_text(encoding="utf-8"))[day] == len(tw.requests) == 2
+
+
+def test_malformed_body_is_an_error_and_keeps_complete_keywords(tmp_path):
+    cfg, tw = _config(tmp_path, "alpha", "beta"), Twitter()
+    ok = tw.handler
+
+    def handler(request):
+        if request.url.params["query"].startswith("(beta") and "-is:retweet" in request.url.params["query"]:
+            return httpx.Response(200, json={"data": [{"start": "2026-09-17T00:00:00Z"}]})  # no tweet_count
+        return ok(request)
+
+    async def go():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await x.collect(client, cfg, _settings(tmp_path), now=H0 + 10 * HOUR, start=H0, end=H0 + 3 * HOUR)
+
+    result = asyncio.run(go())
+    assert any("malformed" in e for e in result.errors)
+    assert not any(k.startswith("x.beta") for k in result.points)
+    assert "x.alpha-or-alphas.en.posts" in result.points and "x.probe.en.posts" in result.points
