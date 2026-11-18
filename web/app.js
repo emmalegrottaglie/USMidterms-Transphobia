@@ -225,8 +225,8 @@ function tile(t, cls) {
   const sp = spark(values, t.band, cls);
   const p = t.phases || {};
   const missing = values.filter((v) => !isNum(v)).length;
-  const sr = `${t.label}: before ${n0(p.before)}, ${M.evDay} ${n0(p.during)}, after ${n0(p.after)}, index, 100 = normal. `
-    + `${sp.band ? `Normal range ${n0(sp.band[0])} to ${n0(sp.band[1])}. ` : 'No normal range: fewer than 14 reference days. '}`
+  const sr = `${t.label}: before ${n1(p.before)}, ${M.evDay} ${n1(p.during)}, after ${n1(p.after)}, index, 100 = normal. `
+    + `${sp.band ? `Normal range ${n1(sp.band[0])} to ${n1(sp.band[1])}. ` : 'No normal range: fewer than 14 reference days. '}`
     + `${sp.clipped ? `${sp.clipped} days are off the 40 to 250 scale. ` : ''}${missing ? `${missing} of ${values.length} days have no value. ` : ''}${precisionText(t, info).toLowerCase()}.`;
   const v = (val, name) => `<div><b class="${isNum(val) ? '' : 'unknown'}">${n0(val)}</b><span>${name}</span></div>`;
   return `<div class="mult" role="listitem">
@@ -259,7 +259,7 @@ function renderStudy() {
   const anti = fam('anti-trans'), framing = fam('framing');
   const breadth = s.breadth?.['anti-trans'] || { daily: {}, left_out: [] };
   const antiVals = M.at(anti.daily), framVals = M.at(framing.daily), breadthVals = M.at(breadth.daily);
-  const summary = (vals, phases) => `before ${n0(phases?.before)}, ${M.evDay} ${n0(phases?.during)}, after ${n0(phases?.after)}`;
+  const summary = (vals, phases) => `before ${n1(phases?.before)}, ${M.evDay} ${n1(phases?.during)}, after ${n1(phases?.after)}`;
   const series = [
     { name: 'Anti-trans terms, one combined query', short: 'ANTI-TRANS', cls: 's-anti', values: antiVals, summary: summary(antiVals, anti.phases) },
     { name: 'Framing terms, one combined query', short: 'FRAMING', cls: 's-framing', values: framVals, summary: summary(framVals, framing.phases) },
@@ -268,7 +268,8 @@ function renderStudy() {
   const bands = [];
   if (anti.band) bands.push({ lo: anti.band[0], hi: anti.band[1], cls: 's-anti' });
   if (framing.band) bands.push({ lo: framing.band[0], hi: framing.band[1], cls: 's-framing' });
-  const bandText = `ANTI-TRANS ${anti.band ? `${n0(anti.band[0])}–${n0(anti.band[1])}` : '—'} · FRAMING ${framing.band ? `${n0(framing.band[0])}–${n0(framing.band[1])}` : '—'}`;
+  // Phase means and normal ranges to one decimal, so a value just outside its range is not rounded into it.
+  const bandText = `ANTI-TRANS ${anti.band ? `${n1(anti.band[0])}–${n1(anti.band[1])}` : '—'} · FRAMING ${framing.band ? `${n1(framing.band[0])}–${n1(framing.band[1])}` : '—'}`;
 
   const familyTerms = (k) => (s.terms || []).filter((t) => t.family === k);
   const contextTerms = (s.terms || []).filter((t) => t.family === 'context');
@@ -276,7 +277,7 @@ function renderStudy() {
 
   const heroV = anti.phases?.after;
   const tileRow = (k, name, ph) => [['before', 'BEFORE'], ['during', M.evDay], ['after', 'AFTER']].map(([key, word]) => `<div class="tile" role="listitem">
-      <div class="tile-value${key === 'after' && k === 'anti' ? ' hl' : ''}">${n0(ph?.[key])}</div>
+      <div class="tile-value${key === 'after' && k === 'anti' ? ' hl' : ''}">${n1(ph?.[key])}</div>
       <div class="tile-label">${word} · ${name}</div></div>`).join('');
 
   const version = s.provisional
@@ -321,7 +322,8 @@ function renderStudy() {
       const t = (s.terms || []).find((x) => x.id === id);
       return `<tr><td class="t-key wrap">${esc((t ? t.label : id).toUpperCase())}</td><td class="t-phase">${k.toUpperCase()}</td>${tdNum(v)}</tr>`;
     })).join('')}</tbody></table></div>`;
-  const leftOut = famKeys.flatMap((k) => (s.breadth?.[k]?.left_out || []).map((id) => (s.terms || []).find((x) => x.id === id)?.label || id));
+  // The breadth note is about the anti-trans breadth only, so it names only that family's left-out terms.
+  const leftOut = (s.breadth?.['anti-trans']?.left_out || []).map((id) => (s.terms || []).find((x) => x.id === id)?.label || id);
 
   const series_ = (key) => `data/series/${key}.csv`;
   const links = [
@@ -346,13 +348,13 @@ function renderStudy() {
 
     <div class="hero">
       <div class="hero-row">
-        <div class="hero-value${isNum(heroV) ? '' : ' unknown'}">${n0(heroV)}</div>
+        <div class="hero-value${isNum(heroV) ? '' : ' unknown'}">${n1(heroV)}</div>
         <div class="hero-text">
           <div class="hero-meta">ANTI-TRANS TERMS AFTER THE ${esc(M.eventShort)}</div>
           <div class="hero-index">INDEX · 100 = NORMAL (${M.refRange})</div>
         </div>
       </div>
-      <div class="hero-meta">MEAN OF ${span(s.event_days.end + 1, s.window.end)} · NORMAL RANGE ${anti.band ? `${n0(anti.band[0])}–${n0(anti.band[1])}` : '—'} (5TH–95TH PERCENTILE OF REFERENCE DAYS)</div>
+      <div class="hero-meta">MEAN OF ${span(s.event_days.end + 1, s.window.end)} · NORMAL RANGE ${anti.band ? `${n1(anti.band[0])}–${n1(anti.band[1])}` : '—'} (5TH–95TH PERCENTILE OF REFERENCE DAYS)</div>
     </div>
     <div class="tiles" role="list" aria-label="Family index before, on and after the event">
       ${tileRow('anti', 'ANTI-TRANS', anti.phases)}${tileRow('framing', 'FRAMING', framing.phases)}
