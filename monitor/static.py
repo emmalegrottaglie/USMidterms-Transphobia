@@ -127,6 +127,7 @@ def export(conn: sqlite3.Connection, config: Config, settings: Settings, out: Pa
         out.mkdir(parents=True)
     (out / "design").mkdir(exist_ok=True)
     shutil.copy2(ROOT / "terminal-design-system" / "terminal.css", out / "design" / "terminal.css")
+    shutil.copy2(ROOT / "CITATION.cff", out / "CITATION.cff")  # the page links to this copy
     (out / MARKER).write_text("made by `python -m monitor export`; safe to replace", encoding="utf-8")
     (out / ".nojekyll").write_text("", encoding="utf-8")  # serve files as-is on GitHub Pages
     data = out / "data"

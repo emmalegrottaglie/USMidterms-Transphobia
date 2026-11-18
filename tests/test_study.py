@@ -192,3 +192,51 @@ def test_freeze_refuses_open_study(tmp_path):
     built = study.build(conn, cfg, the_study(), now=ts("2026-11-10"))
     with pytest.raises(ValueError):
         study.freeze(built, "x", tmp_path)
+
+
+def test_term_band_with_enough_reference_days(tmp_path):
+    cfg = make_config()
+    conn = new_db(tmp_path, cfg)
+    populate(conn, cfg)
+    built = study.build(conn, cfg, the_study(), now=ts("2026-11-18") + HOUR)
+    for t in built["terms"]:
+        lo, hi = t["band"]
+        assert lo <= 100 <= hi  # the reference days average 100 by construction
+    # the same rule as the families: analysis.band over the reference days
+    a1 = {int(d): v for d, v in built["terms"][0]["daily"].items()}
+    ref = built["reference"]
+    assert built["terms"][0]["band"] == list(analysis.band(a1, ref["start"], ref["end"] + DAY))
+
+
+def test_term_band_is_null_with_too_few_reference_days(tmp_path):
+    cfg = make_config((("a1", "anti-trans"), ("a2", "anti-trans"), ("late", "anti-trans"), ("f1", "framing")))
+    conn = new_db(tmp_path, cfg)
+    populate(conn, make_config((("a1", "anti-trans"), ("a2", "anti-trans"), ("f1", "framing"))))
+    # "late" starts on 12 Oct: 8 reference days (12-19 Oct), under the 14 a band needs
+    fill(conn, "x.late.en.posts", noisy, ts("2026-10-12"), ts("2026-11-17"))
+    built = study.build(conn, cfg, the_study(), now=ts("2026-11-18") + HOUR)
+    late = next(t for t in built["terms"] if t["id"] == "late")
+    assert late["daily"] and late["band"] is None
+
+
+def test_breadth_phases_on_synthetic_data(tmp_path):
+    cfg = make_config()
+    conn = new_db(tmp_path, cfg)
+    populate(conn, cfg)  # term posts rise by half after the event day
+    built = study.build(conn, cfg, the_study(), now=ts("2026-11-18") + HOUR)
+    ph = built["breadth"]["anti-trans"]["phases"]
+    assert set(ph) == {"before", "during", "after"}
+    assert abs(ph["before"] - 100) < 3
+    # breadth is not weekday-adjusted: the event day is its one noisy day against the
+    # reference mean (21 days of 10, 11, 12: mean 11)
+    assert abs(ph["during"] - noisy(ts("2026-11-03")) / 11 * 100) < 0.5
+    assert abs(ph["after"] - 150) < 5
+    assert ph["after"] / ph["before"] > 1.4
+
+
+def test_breadth_phases_are_null_without_data(tmp_path):
+    cfg = make_config()
+    conn = new_db(tmp_path, cfg)
+    built = study.build(conn, cfg, the_study(), now=ts("2026-11-18") + HOUR)
+    assert built["breadth"]["anti-trans"]["phases"] == {"before": None, "during": None, "after": None}
+    assert all(t["band"] is None for t in built["terms"])

@@ -262,3 +262,8 @@ def test_rejected_json_pins_all_rows_to_the_table():
         assert (r["posts_a_day_approx"], r["anti_trans_checked"], r["checked_n"], r["precision_pct"],
                 r["other_uses"]) == (per_day, k, n, pct, other), term
         assert r["decision"] == ("held" if term.startswith('"trans cult') else "not added")
+
+
+def test_export_copies_the_citation_file(tmp_path):
+    _, _, out = built(tmp_path)
+    assert (out / "CITATION.cff").read_bytes() == (ROOT / "CITATION.cff").read_bytes()

@@ -7,9 +7,7 @@
 
 const DAY = 86400;
 const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-const REPO = 'https://github.com/emmalegrottaglie/USMidterms-Transphobia';
 const SCALE_LO = 40, SCALE_HI = 250;  // small multiples: one fixed scale for every term
-const MIN_REFERENCE_DAYS = 14;        // as monitor/analysis.py
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -52,22 +50,6 @@ function buildModel(s) {
     baseline: `100 = SAME WEEKDAY, ${refRange}`,
     bandWords: 'SHADED = 5TH–95TH PERCENTILE OF REFERENCE DAYS',
   };
-}
-
-// 5th–95th percentile of the reference days, the same rule as monitor/analysis.py `band`
-// (linear interpolation, at least 14 reference days, else none). Used for each term's
-// own band; the family bands come ready-made in study.json.
-function refBand(values) {
-  const vs = M.days.map((d, i) => (M.phaseOf(d) === 'ref' ? values[i] : null)).filter(isNum).sort((a, b) => a - b);
-  if (vs.length < MIN_REFERENCE_DAYS) return null;
-  const q = (p) => { const pos = p * (vs.length - 1), lo = Math.floor(pos), hi = Math.min(lo + 1, vs.length - 1); return vs[lo] + (vs[hi] - vs[lo]) * (pos - lo); };
-  return [q(0.05), q(0.95)];
-}
-
-// Mean over the after phase, as monitor/study.py `_phases` (null with no day).
-function afterMean(values) {
-  const vs = values.filter((v, i) => isNum(v) && M.phaseOf(M.days[i]) === 'after');
-  return vs.length ? Math.round((vs.reduce((a, b) => a + b, 0) / vs.length) * 100) / 100 : null;
 }
 
 // ── Main chart: family lines against normal ────────────────────────────────────
@@ -197,11 +179,13 @@ function mainChart(el, readout, cfg) {
 }
 
 // ── Small multiples: one tile per term, fixed 40–250 scale ─────────────────────
-function spark(values, cls) {
+// `band` is the term's 5th–95th percentile of reference days from study.json (null
+// with fewer than 14 reference days).
+function spark(values, band, cls) {
   const VW = 160, VH = 60, top = 4, h = VH - 8, n = values.length;
   const x = (i) => ((i + 0.5) * VW) / n;
   const y = (v) => top + ((SCALE_HI - Math.max(SCALE_LO, Math.min(SCALE_HI, v))) / (SCALE_HI - SCALE_LO)) * h;
-  const b = refBand(values);
+  const b = Array.isArray(band) && band.every(isNum) ? band : null;
   const bandRect = b ? `<rect class="band ${cls}" x="0" width="${VW}" y="${y(b[1]).toFixed(1)}" height="${Math.max(0.8, y(b[0]) - y(b[1])).toFixed(1)}"/>` : '';
   let d = '', marks = '', dots = '';
   values.forEach((v, i) => {
@@ -238,7 +222,7 @@ function precisionHtml(t, info) {
 function tile(t, cls) {
   const values = M.at(t.daily);
   const info = terms.find((x) => x.id === t.id);
-  const sp = spark(values, cls);
+  const sp = spark(values, t.band, cls);
   const p = t.phases || {};
   const missing = values.filter((v) => !isNum(v)).length;
   const sr = `${t.label}: before ${n0(p.before)}, ${M.evDay} ${n0(p.during)}, after ${n0(p.after)}, index, 100 = normal. `
@@ -279,7 +263,7 @@ function renderStudy() {
   const series = [
     { name: 'Anti-trans terms, one combined query', short: 'ANTI-TRANS', cls: 's-anti', values: antiVals, summary: summary(antiVals, anti.phases) },
     { name: 'Framing terms, one combined query', short: 'FRAMING', cls: 's-framing', values: framVals, summary: summary(framVals, framing.phases) },
-    { name: 'Breadth of the anti-trans terms, each term weighted equally', short: 'BREADTH', cls: 's-breadth', values: breadthVals, summary: `after ${n0(afterMean(breadthVals))}` },
+    { name: 'Breadth of the anti-trans terms, each term weighted equally', short: 'BREADTH', cls: 's-breadth', values: breadthVals, summary: `before ${n0(breadth.phases?.before)}, ${M.evDay} ${n0(breadth.phases?.during)}, after ${n0(breadth.phases?.after)}` },
   ];
   const bands = [];
   if (anti.band) bands.push({ lo: anti.band[0], hi: anti.band[1], cls: 's-anti' });
@@ -318,14 +302,13 @@ function renderStudy() {
   const famKeys = ['anti-trans', 'framing'];
   const loo = (k) => Object.values(rob(k).leave_one_out || {}).filter(isNum);
   const looRange = (k) => (loo(k).length ? `${n0(Math.min(...loo(k)))}–${n0(Math.max(...loo(k)))}` : '—');
-  const breadthAfter = (k) => afterMean(M.at(s.breadth?.[k]?.daily));
   const placeboWord = (k) => { const a = fam(k).phases?.after; return isNum(a) ? (a >= 100 ? 'AT OR ABOVE' : 'AT OR BELOW') : 'AS FAR FROM 100 AS'; };
   const robRows = [
     ['AFTER · HEADLINE INDEX (PROBE-NORMALISED)', (k) => n1(rob(k).raw_vs_probe?.probe)],
     ['AFTER · WITHOUT PROBE NORMALISATION', (k) => n1(rob(k).raw_vs_probe?.raw)],
     ['AFTER · SUM OF TERM COUNTS, ORIGINAL POSTS', (k) => n1(rob(k).originals_vs_reposts?.posts)],
     ['AFTER · SUM OF TERM COUNTS, REPOSTS', (k) => n1(rob(k).originals_vs_reposts?.reposts)],
-    ['AFTER · BREADTH, ALL TERMS', (k) => n1(breadthAfter(k))],
+    ['AFTER · BREADTH, ALL TERMS', (k) => n1(s.breadth?.[k]?.phases?.after)],
     ['AFTER · BREADTH, LEAVING ONE TERM OUT (LOWEST–HIGHEST)', (k) => looRange(k)],
     ['EARLIER DAYS WITH AN INDEX AS EXTREME AS AFTER', (k) => `${pct0(rob(k).placebo_share)}${isNum(rob(k).placebo_share) ? ` <span class="muted">${placeboWord(k)}</span>` : ''}`],
   ];
@@ -350,7 +333,7 @@ function renderStudy() {
     ['FRAMING FAMILY · HOURLY CSV', series_('x.family.framing.en.posts')],
     ['PROBE · HOURLY CSV', series_('x.probe.en.posts')],
     ...(s.provisional ? [] : [[`STUDY VERSION ${s.version} · JSON`, `data/studies/${s.id}/v${s.version}.json`]]),
-    ['CITATION.CFF', `${REPO}/blob/main/CITATION.cff`],
+    ['CITATION.CFF', 'CITATION.cff'],
     ['METHODS', '#methods'],
   ];
 
@@ -408,7 +391,7 @@ function renderStudy() {
     </ul>
 
     <h2 class="sect">Data for researchers</h2>
-    <div class="links">${links.map(([label, href]) => `<a class="chip ghost" href="${esc(href)}"${href.startsWith('http') ? ' rel="noopener"' : ''}>${esc(label)}</a>`).join('')}</div>
+    <div class="links">${links.map(([label, href]) => `<a class="chip ghost" href="${esc(href)}">${esc(label)}</a>`).join('')}</div>
     <ul class="notes">
       <li>Every series also has an hourly CSV and JSON file in <code>data/series/</code>, named by its series key. Times are UTC; an hour is stamped at its end.</li>
     </ul>`;

@@ -168,8 +168,9 @@ def build(conn, config: Config, study: Study, now: int | None = None,
     keys are day starts) as ints; `as_of` (latest stored probe point) and `built_at`
     are ISO-8601 UTC strings ("...Z"); `as_of` is None with no probe data. Families
     and terms carry daily weekday indexes of their probe-normalised rate (100 = a
-    normal weekday), `raw_daily` the family's raw daily post counts. Unknown values
-    are None or absent, never 0.
+    normal weekday), their `band` (5th-95th percentile of the reference days, None
+    with fewer than 14) and their `phases`; `raw_daily` is the family's raw daily post
+    count. Breadth carries `phases` too. Unknown values are None or absent, never 0.
     """
     now = now or int(time.time())
     f = frame(study, events_dir)
@@ -197,9 +198,10 @@ def build(conn, config: Config, study: Study, now: int | None = None,
     for t in config.terms:
         rates[t.id] = analysis.rate(totals(by_term_metric[(t.id, "posts")]), probe)
         daily = analysis.weekday_index(rates[t.id], rs, re_)
+        bnd = analysis.band(daily, rs, re_)
         terms_out.append({"id": t.id, "label": t.label, "family": t.family, "precision": t.precision,
                           "precision_ci": list(t.precision_ci) if t.precision_ci else None,
-                          "daily": daily, "phases": _phases(daily, f, study)})
+                          "daily": daily, "band": list(bnd) if bnd else None, "phases": _phases(daily, f, study)})
 
     breadth_out: dict[str, dict] = {}
     robustness: dict[str, dict] = {}
@@ -208,7 +210,7 @@ def build(conn, config: Config, study: Study, now: int | None = None,
         if not members:
             continue
         idx, left_out = analysis.breadth({t.id: rates[t.id] for t in members}, rs, re_)
-        breadth_out[fam] = {"daily": idx, "left_out": left_out}
+        breadth_out[fam] = {"daily": idx, "left_out": left_out, "phases": _phases(idx, f, study)}
 
         # The family headline is one pooled OR query, so a term cannot be removed from it;
         # leave-one-out is done on the breadth index.
