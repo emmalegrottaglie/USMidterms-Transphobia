@@ -151,14 +151,45 @@ def test_failed_probe_writes_nothing(tmp_path):
 
 def test_budget_exhausted_keeps_only_whole_keywords(tmp_path):
     cfg = _config(tmp_path, "alpha", "beta")
-    # probe (1) + alpha (3) + one of beta's three: the cap hits in the middle of beta
+    # probe (1) + family (1) + alpha (3): the cap hits at the start of beta
     result = asyncio.run(_collect(Twitter(), cfg, _settings(tmp_path, cap=5),
                                   now=H0 + 10 * HOUR, start=H0, end=H0 + 3 * HOUR))
     assert "x.alpha-or-alphas.en.posts" in result.points
     assert not any(k.startswith("x.beta") for k in result.points)
-    assert not any(k.startswith("x.family") for k in result.points)
+    assert "x.family.anti-trans.en.posts" in result.points
     assert any("cap" in e and "5" in e for e in result.errors)
     assert "x.probe.en.posts" in result.points  # paid for, so kept
+
+
+def test_budget_cut_drops_terms_before_the_family_headline(tmp_path):
+    cfg, tw = _config(tmp_path, "alpha", "beta"), Twitter()
+    # probe (1) + family (1), then the cap: the family headline is kept, every term dropped
+    result = asyncio.run(_collect(tw, cfg, _settings(tmp_path, cap=2),
+                                  now=H0 + 10 * HOUR, start=H0, end=H0 + 3 * HOUR))
+    assert set(result.points) == {"x.probe.en.posts", "x.family.anti-trans.en.posts"}
+    assert any("cap" in e for e in result.errors)
+    assert ["thing" in q["query"] for _, q in tw.requests] == [True, False]
+    assert "alpha" in tw.requests[1][1]["query"] and "beta" in tw.requests[1][1]["query"]  # the family query
+
+
+def test_empty_probe_is_a_failed_probe(tmp_path):
+    cfg, tw = _config(tmp_path, "alpha"), Twitter()
+    ok = tw.handler
+
+    def handler(request):
+        if "thing" in request.url.params["query"]:
+            tw.requests.append((request.url.path, dict(request.url.params)))
+            return httpx.Response(200, json={"meta": {"result_count": 0}})  # no buckets at all
+        return ok(request)
+
+    async def go():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await x.collect(client, cfg, _settings(tmp_path), now=H0 + 10 * HOUR, start=H0, end=H0 + 3 * HOUR)
+
+    result = asyncio.run(go())
+    assert result.points == {}
+    assert any("probe" in e.lower() and "no data" in e for e in result.errors)
+    assert len(tw.requests) == 1  # nothing else is fetched for that window
 
 
 def test_paging_follows_next_token(tmp_path):

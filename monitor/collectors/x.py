@@ -12,12 +12,14 @@ zero. So each pass also counts the probe query, which matches millions of posts 
 hour where even the probe is zero is a gap in the Twitter data and gets no point in any series
 of the pass (the probe's own included), never a zero. The probe is fetched once per pass on
 the full-archive endpoint and is also stored as a series. If the probe request fails, nothing
-is written for that pass, since without it gaps cannot be told from zeros.
+is written for that pass, since without it gaps cannot be told from zeros. A probe that
+returns no buckets at all for a non-empty window counts as failed in the same way.
 
 Pay-per-use: $0.005 per recent-counts request, $0.010 per full-archive request. Every request,
 each page included, takes one from the shared daily Budget first. When the cap is reached
 mid-pass, the keywords already complete are kept and the rest are left for the next pass; a
-keyword is never written partly.
+keyword is never written partly. A pass runs the probe first, then the family headline
+queries, then the terms, so a cut drops terms before the headline.
 """
 
 from __future__ import annotations
@@ -143,6 +145,9 @@ async def _pass(client: httpx.AsyncClient, budget: Budget, settings: Settings, p
     except (httpx.HTTPError, ValueError) as e:
         result.errors.append(f"Twitter probe: {e}")  # without it, gaps cannot be told from zeros
         return result, False
+    if not probe:  # the window has whole hours, so an answer with no buckets is a failure
+        result.errors.append(f"Twitter probe returned no data for {_iso(begin)} to {_iso(stop)}: nothing written for that window")
+        return result, False
     gaps = {h for h, n in probe.items() if n == 0}
     if gaps:
         result.errors.append(f"Twitter has no data for {len(gaps)} hours ({_iso(min(gaps))} to {_iso(max(gaps) + HOUR)}): left as gaps")
@@ -156,7 +161,12 @@ async def _pass(client: httpx.AsyncClient, budget: Budget, settings: Settings, p
     for s in specs:  # one set of requests per query: a term shares three, any other series one
         groups[(s.query, s.term_id is not None)].append(s)
     # The probe first: it is already paid for, so it is kept even if the budget runs out later.
-    for (query, is_term), group in sorted(groups.items(), key=lambda kv: kv[1][0].family != "probe"):
+    # Then the family headline queries, then the terms, so a budget cut drops terms first.
+    def order(kv):
+        (_, is_term), group = kv
+        return 0 if group[0].family == "probe" else 2 if is_term else 1
+
+    for (query, is_term), group in sorted(groups.items(), key=order):
         try:
             if is_term:
                 u = url_for(group[0])
