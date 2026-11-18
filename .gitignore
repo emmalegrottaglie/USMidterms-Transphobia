@@ -5,3 +5,7 @@ site/
 .venv/
 __pycache__/
 *.egg-info/
+
+# Local copies of third-party web pages saved to check sources. They are not ours to publish.
+/TERF glossary - RationalWiki.html
+/TERF glossary - RationalWiki_files/
