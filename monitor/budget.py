@@ -34,7 +34,7 @@ class Budget:
             try:
                 os.close(os.open(self.lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
                 return
-            except FileExistsError:
+            except (FileExistsError, PermissionError):  # Windows: a lock being deleted refuses opens
                 pass
             try:
                 if time.time() - self.lock_path.stat().st_mtime > LOCK_STALE:
@@ -78,7 +78,11 @@ class Budget:
             if used >= self.cap:
                 raise BudgetExhausted(f"daily Twitter request cap reached ({self.cap})")
             tmp = self.path.with_name(self.path.name + ".tmp")
-            tmp.write_text(json.dumps({day: used + 1}), encoding="utf-8")
-            os.replace(tmp, self.path)
+            try:
+                tmp.write_text(json.dumps({day: used + 1}), encoding="utf-8")
+                os.replace(tmp, self.path)
+            except BaseException:
+                tmp.unlink(missing_ok=True)
+                raise
         finally:
             self._release()
