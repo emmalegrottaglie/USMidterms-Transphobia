@@ -1,0 +1,171 @@
+"""Command line: python -m monitor {collect,backfill,import-tracker,study,pause,resume,close-if-done}
+
+`export` and `publish` are added by the static-site task (monitor/static.py).
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import logging
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+from . import db, importer, pause, study
+from .collectors import x
+from .config import Config, Settings, load_config
+
+DAY = 86400
+
+
+def _date(text: str) -> int:
+    return int(datetime.fromisoformat(text).replace(tzinfo=timezone.utc).timestamp())
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="monitor")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    sub.add_parser("collect", help="one live collection pass (does nothing while paused)")
+
+    p = sub.add_parser("backfill", help="load full-archive history from Twitter")
+    p.add_argument("--from", dest="start", required=True, help="UTC date, YYYY-MM-DD")
+    p.add_argument("--to", dest="end", help="UTC date, YYYY-MM-DD, inclusive (default: now)")
+    p.add_argument("--missing-before", action="store_true",
+                   help="only the hours before each keyword's earliest stored hour")
+
+    p = sub.add_parser("import-tracker", help="copy points from the bot tracker's database")
+    p.add_argument("--db", required=True, type=Path)
+
+    p = sub.add_parser("study", help="build a study (config/studies.toml)")
+    p.add_argument("action", choices=["build"])
+    p.add_argument("id", nargs="?", help="study id (default: the newest study)")
+    p.add_argument("--freeze", action="store_true", help="store the build as the study's next version")
+    p.add_argument("--note", default="", help="what this version is or changes (required with --freeze)")
+
+    # export and publish (Task 9) go here.
+
+    p = sub.add_parser("pause", help="stop collecting until the next event")
+    p.add_argument("--reason", required=True)
+    p = sub.add_parser("resume", help="collect again, and open a study around a new event")
+    p.add_argument("--reason", required=True)
+    p.add_argument("--event-date", required=True, help="UTC date, YYYY-MM-DD")
+    p.add_argument("--event-short", required=True, help="chart label, e.g. ELECTION")
+    p.add_argument("--event-label", required=True, help="one line describing the event")
+    p.add_argument("--event-source", required=True, help="who reported it, with date and URL")
+    p.add_argument("--event-status", default="reported", choices=["reported", "confirmed"])
+
+    sub.add_parser("close-if-done", help="freeze the newest study once its data is in, then pause")
+    return parser
+
+
+def main(argv: list[str] | None = None, config: Config | None = None, settings: Settings | None = None,
+         config_dir: Path | None = None, studies_dir: Path | None = None) -> int:
+    """`config`, `settings`, `config_dir` and `studies_dir` are injectable for tests."""
+    parser = _parser()
+    args = parser.parse_args(argv)
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    settings = settings or Settings.from_env()
+    cdir = config_dir or study.CONFIG_DIR
+    config = config or load_config(cdir)
+    now = int(time.time())
+
+    if args.cmd == "collect":
+        record = pause.state(settings)
+        if record:
+            print(f"collection is paused: {record['reason']}")
+            return 0
+        asyncio.run(x.run(config, settings, now))
+        with db.session(settings.db_path) as conn:
+            done = pause.close_if_done(conn, config, now, settings, cdir, studies_dir)
+        if done:
+            print(f"froze study {done['id']} and paused collection")
+        return 0
+
+    if args.cmd == "backfill":
+        try:
+            start = _date(args.start)
+            end = _date(args.end) + DAY if args.end else None
+        except ValueError:
+            parser.error("dates must be YYYY-MM-DD")
+        if end is not None and end <= start:
+            parser.error("--to must not be before --from")
+        try:
+            results = asyncio.run(x.backfill(config, settings, start, end, args.missing_before))
+        except RuntimeError as e:
+            print(f"backfill not run: {e}", file=sys.stderr)
+            return 1
+        errors, total = [], 0
+        with db.session(settings.db_path) as conn:
+            db.init(conn, config.series)
+            for query, result in results.items():
+                errors += result.errors
+                for spec in config.series:
+                    if spec.query == query and spec.key in result.points:
+                        n = db.replace_hours(conn, spec.key, result.points[spec.key])
+                        total += n
+                        print(f"{spec.key}: {n} points")
+            db.record_run(conn, x.PLATFORM, bool(total), total, "; ".join(errors)[:2000] or None)
+        for e in errors:
+            print(f"error: {e}")
+        print(f"{total} points written, {len(errors)} errors")
+        return 0 if total or not errors else 1
+
+    if args.cmd == "import-tracker":
+        if not args.db.exists():
+            print(f"tracker database not found: {args.db}", file=sys.stderr)
+            return 1
+        with db.session(settings.db_path) as conn:
+            db.init(conn, config.series)
+            copied = importer.import_tracker(conn, config, args.db)
+        for key, n in copied.items():
+            print(f"{key}: {n} points")
+        print(f"{len(copied)} series imported")
+        return 0
+
+    if args.cmd == "study":
+        if args.freeze and not args.note:
+            parser.error("--freeze needs --note saying what this version is or changes")
+        chosen = study.get(args.id, cdir)
+        if chosen is None:
+            parser.error(f"no study {args.id!r} in studies.toml" if args.id else "no study in studies.toml")
+        with db.session(settings.db_path) as conn:
+            db.init(conn, config.series)
+            built = study.build(conn, config, chosen, now, cdir)
+        print(f"{chosen.id}: {'complete' if built['complete'] else 'window still open'}")
+        for fam, info in built["families"].items():
+            ph = info["phases"]
+            print(f"  {fam}: before {ph['before']}  during {ph['during']}  after {ph['after']}")
+        if args.freeze:
+            print(f"frozen: {study.freeze(built, args.note, studies_dir)}")
+        return 0
+
+    if args.cmd == "pause":
+        pause.pause(settings, args.reason, now)
+        print(f"paused: {args.reason}")
+        return 0
+
+    if args.cmd == "resume":
+        try:
+            _date(args.event_date)
+        except ValueError:
+            parser.error("--event-date must be YYYY-MM-DD")
+        event = {"date": args.event_date, "short": args.event_short, "label": args.event_label,
+                 "source": args.event_source, "status": args.event_status}
+        opened = pause.resume(settings, args.reason, event, cdir)
+        print(f"resumed; opened study {opened}")
+        return 0
+
+    if args.cmd == "close-if-done":
+        with db.session(settings.db_path) as conn:
+            db.init(conn, config.series)
+            done = pause.close_if_done(conn, config, now, settings, cdir, studies_dir)
+        print(f"froze study {done['id']} and paused collection" if done else "nothing to freeze")
+        return 0
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
