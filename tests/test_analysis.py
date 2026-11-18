@@ -112,3 +112,41 @@ def test_breadth_leaves_out_short_reference_and_handles_all_left_out():
     short = _term(11.0, 1.0, days=13)
     assert analysis.breadth({"short": short}, 0, 14 * DAY) == ({}, ["short"])
     assert analysis.breadth({}, 0, 14 * DAY) == ({}, [])
+
+
+def test_breadth_scales_each_term_by_its_reference_sd():
+    # a alternates 10/12 (mean 11, deviation 1); b alternates 80/140 (mean 110, deviation 30).
+    # Both have the same sample-SD factor k = sqrt(14/13), so SDs are 1k and 30k.
+    # Spike day: a = 13.2 (+20%), b = 165 (+50%).
+    # Scaled reference means: a 11/k, b 110/(30k) = 3.6667/k; combined mean 7.3333/k.
+    # Scaled spike: a 13.2/k, b 165/(30k) = 5.5/k; average 9.35/k.
+    # Breadth = 9.35 / 7.3333 * 100 = 127.5. A raw average would give 89.1 / 60.5 * 100 = 147.3.
+    spike = 14 * DAY
+    a = _term(11.0, 1.0, extra={spike: 13.2})
+    b = _term(110.0, 30.0, extra={spike: 165.0})
+    idx, left = analysis.breadth({"a": a, "b": b}, 0, 14 * DAY)
+    assert left == []
+    assert idx[spike] == pytest.approx(127.5)
+    b2 = {d: v * 2 for d, v in b.items()}
+    idx2, _ = analysis.breadth({"a": a, "b": b2}, 0, 14 * DAY)
+    assert idx2[spike] == pytest.approx(127.5)
+
+
+def test_breadth_keeps_term_with_exactly_14_reference_days():
+    idx, left = analysis.breadth({"t": _term(11.0, 1.0, days=14)}, 0, 14 * DAY)
+    assert left == []
+    assert len(idx) == 14
+
+
+def test_weekday_index_leaves_out_day_when_weekday_reference_mean_is_zero():
+    # Day 0 and WEEK share a weekday; the reference (day 0 only, plus DAY) has mean 0 for it.
+    daily = {0: 0.0, WEEK: 5.0, DAY: 10.0}
+    out = analysis.weekday_index(daily, 0, 2 * DAY)
+    assert 0 not in out and WEEK not in out
+    assert out[DAY] == pytest.approx(100.0)
+
+
+def test_hourly_ratio_uses_mean_of_three_earlier_weeks():
+    base = 10 * WEEK
+    hours = {base - WEEK: 10.0, base - 2 * WEEK: 20.0, base - 3 * WEEK: 30.0, base: 40.0}
+    assert analysis.hourly_ratio(hours)[base] == pytest.approx(200.0)

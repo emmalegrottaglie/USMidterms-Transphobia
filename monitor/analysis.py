@@ -102,6 +102,8 @@ def breadth(
     the scaled rates of the terms present that day; the series is then rescaled so
     its mean over the reference days is 100. A term with fewer than 14 reference
     days or a zero SD is left out. If every term is left out, returns ({}, all ids).
+    Likewise, if the combined series has no reference days or a reference mean of 0,
+    every id is returned as left out.
     """
     scaled: dict[str, dict[int, float]] = {}
     left_out: list[str] = []
