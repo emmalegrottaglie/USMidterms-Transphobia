@@ -43,7 +43,7 @@ def test_backfill_writes_mapped_series(tmp_path, monkeypatch, capsys):
     other = next(s for s in cfg.series if s.term_id == "a1" and s.metric == "reposts")
     start = ts("2026-11-01")
 
-    async def fake_backfill(config, settings, s, e=None, missing_before=False):
+    async def fake_backfill(config, settings, s, e=None, missing_before=False, **kw):
         seen.update(start=s, end=e, mb=missing_before)
         return {term.query: Result(points={term.key: [(start + HOUR, 5.0), (start + 2 * HOUR, 7.0)],
                                            other.key: [(start + HOUR, 1.0)]}, errors=["boom"])}
@@ -201,7 +201,7 @@ def test_bad_arguments_are_refused_cleanly(tmp_path, monkeypatch, args):
 def test_backfill_same_day_range_is_one_day(tmp_path, monkeypatch):
     st, cfg, seen = settings_for(tmp_path), make_config(), {}
 
-    async def fake(config, settings, s, e=None, missing_before=False):
+    async def fake(config, settings, s, e=None, missing_before=False, **kw):
         seen.update(s=s, e=e)
         return {}
 
@@ -209,3 +209,35 @@ def test_backfill_same_day_range_is_one_day(tmp_path, monkeypatch):
     cli.main(["backfill", "--from", "2026-11-03", "--to", "2026-11-03"], config=cfg, settings=st,
              config_dir=config_copy(tmp_path))
     assert seen["e"] - seen["s"] == 86400
+
+
+def test_collect_refuses_without_the_shared_usage_file(tmp_path, monkeypatch, capsys):
+    import dataclasses
+    st, cfg = dataclasses.replace(settings_for(tmp_path), usage_file=None), make_config()
+    monkeypatch.setattr(x, "run", no_request)
+    assert cli.main(["collect"], config=cfg, settings=st, config_dir=config_copy(tmp_path)) == 1
+    assert "TWITTER_USAGE_FILE" in capsys.readouterr().err
+
+
+def test_backfill_passes_the_request_limit(tmp_path, monkeypatch):
+    st, cfg, seen = settings_for(tmp_path), make_config(), []
+
+    async def fake(config, settings, s, e=None, missing_before=False, max_requests=None):
+        seen.append(max_requests)
+        return {}
+
+    monkeypatch.setattr(x, "backfill", fake)
+    cli.main(["backfill", "--from", "2026-11-03"], config=cfg, settings=st, config_dir=config_copy(tmp_path))
+    cli.main(["backfill", "--from", "2026-11-03", "--max-requests", "12"], config=cfg, settings=st,
+             config_dir=config_copy(tmp_path))
+    assert seen == [60, 12]
+
+
+def test_backfill_over_the_limit_is_refused_without_a_request(tmp_path, monkeypatch, capsys):
+    st, cfg = settings_for(tmp_path), make_config()
+    monkeypatch.setattr(x.httpx, "AsyncClient", no_request)
+    assert cli.main(["backfill", "--from", "2026-09-01", "--to", "2026-11-01", "--max-requests", "5"],
+                    config=cfg, settings=st, config_dir=config_copy(tmp_path)) == 1
+    err = capsys.readouterr().err
+    assert "--max-requests" in err and "nothing requested" in err
+    assert not st.usage_file.exists()

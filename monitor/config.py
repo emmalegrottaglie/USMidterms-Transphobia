@@ -48,7 +48,7 @@ class Settings:
     db_path: Path
     x_bearer_token: str
     x_max_requests_per_day: int
-    usage_file: Path
+    usage_file: Path | None  # None when TWITTER_USAGE_FILE is unset: then no Twitter request is made
     public_url: str
 
     @classmethod
@@ -64,7 +64,7 @@ class Settings:
             db_path=path("MONITOR_DB", "data/monitor.db"),
             x_bearer_token=env("X_BEARER_TOKEN", ""),
             x_max_requests_per_day=int(env("X_MAX_REQUESTS_PER_DAY", "150")),
-            usage_file=path("TWITTER_USAGE_FILE", "data/x_usage.json"),
+            usage_file=path("TWITTER_USAGE_FILE", "") if env("TWITTER_USAGE_FILE", "").strip() else None,
             public_url=env("MONITOR_PUBLIC_URL", "").rstrip("/"),
         )
 

@@ -47,6 +47,8 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--to", dest="end", help="UTC date, YYYY-MM-DD, inclusive (default: now)")
     p.add_argument("--missing-before", action="store_true",
                    help="only the hours before each keyword's earliest stored hour")
+    p.add_argument("--max-requests", type=int, default=60, metavar="N",
+                   help="refuse, before any request, if the backfill would make more than N requests (default 60)")
 
     p = sub.add_parser("import-tracker", help="copy points from the bot tracker's database")
     p.add_argument("--db", required=True, type=Path)
@@ -94,6 +96,9 @@ def main(argv: list[str] | None = None, config: Config | None = None, settings: 
         if record:
             print(f"collection is paused: {record['reason']}")
             return 0
+        if settings.usage_file is None:
+            print(f"collect not run: {x.NO_USAGE_FILE}", file=sys.stderr)
+            return 1
         asyncio.run(x.run(config, settings, now))
         try:
             with db.session(settings.db_path) as conn:
@@ -113,8 +118,11 @@ def main(argv: list[str] | None = None, config: Config | None = None, settings: 
             parser.error("--from and --to must be dates like 2026-11-03 (UTC, no time or offset)")
         if end is not None and end <= start:  # --to is a whole day, so equal dates are fine; earlier is not
             parser.error("--to must not be before --from")
+        if args.max_requests < 1:
+            parser.error("--max-requests must be at least 1")
         try:
-            results = asyncio.run(x.backfill(config, settings, start, end, args.missing_before))
+            results = asyncio.run(x.backfill(config, settings, start, end, args.missing_before,
+                                             max_requests=args.max_requests))
         except RuntimeError as e:
             print(f"backfill not run: {e}", file=sys.stderr)
             return 1

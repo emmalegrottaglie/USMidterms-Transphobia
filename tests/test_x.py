@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timezone
 
 import httpx
+import pytest
 
 from monitor import db
 from monitor.collectors import x
@@ -54,10 +55,10 @@ class Twitter:
             return httpx.Response(503, text="unavailable")
         start, end = _parse(q["start_time"]), _parse(q["end_time"])
         hours = list(range(start, end, HOUR))
-        if self.page_size:  # first page holds the first `page_size` hours and a next_token
+        if self.page_size:  # first page holds the first `page_size` hours, and a next_token if more remain
             page = 1 if "next_token" in q else 0
             chunk = hours[page * self.page_size:(page + 1) * self.page_size]
-            meta = {} if page else {"next_token": "abc"}
+            meta = {"next_token": "abc"} if not page and len(hours) > self.page_size else {}
         else:
             chunk, meta = hours, {}
         if "thing" in query:
@@ -294,3 +295,73 @@ def test_malformed_body_is_an_error_and_keeps_complete_keywords(tmp_path):
     assert any("malformed" in e for e in result.errors)
     assert not any(k.startswith("x.beta") for k in result.points)
     assert "x.alpha-or-alphas.en.posts" in result.points and "x.probe.en.posts" in result.points
+
+
+def _no_usage(tmp_path):
+    import dataclasses
+    return dataclasses.replace(_settings(tmp_path), usage_file=None)
+
+
+def test_no_request_without_the_shared_usage_file(tmp_path):
+    cfg, tw = _config(tmp_path, "alpha"), Twitter()
+    result = asyncio.run(_collect(tw, cfg, _no_usage(tmp_path), now=H0 + 10 * HOUR, start=H0, end=H0 + 3 * HOUR))
+    assert result.points == {} and any("TWITTER_USAGE_FILE" in e for e in result.errors)
+
+    async def go():
+        async with tw.client() as client:
+            return await x.backfill(cfg, _no_usage(tmp_path), H0, end=H0 + 5 * HOUR, client=client)
+
+    with pytest.raises(RuntimeError, match="TWITTER_USAGE_FILE"):
+        asyncio.run(go())
+    assert tw.requests == [] and not (tmp_path / "usage.json").exists()
+
+
+def test_settings_leave_the_usage_file_unset_without_the_variable(tmp_path, monkeypatch):
+    from monitor import config as config_module
+    monkeypatch.setattr(config_module, "load_dotenv", lambda *a, **k: None)  # ignore the real .env
+    monkeypatch.delenv("TWITTER_USAGE_FILE", raising=False)
+    assert Settings.from_env().usage_file is None
+    monkeypatch.setenv("TWITTER_USAGE_FILE", "   ")
+    assert Settings.from_env().usage_file is None
+    monkeypatch.setenv("TWITTER_USAGE_FILE", str(tmp_path / "shared.json"))
+    assert Settings.from_env().usage_file == tmp_path / "shared.json"
+
+
+def _backfill(tw, cfg, settings, start, end, **kw):
+    async def go():
+        async with tw.client() as client:
+            return await x.backfill(cfg, settings, start, end=end, client=client, **kw)
+    return asyncio.run(go())
+
+
+def test_backfill_counts_planned_requests_and_refuses_over_the_limit(tmp_path):
+    cfg, settings = _config(tmp_path, "alpha"), _settings(tmp_path)
+    start, end = H0, H0 + 40 * 24 * HOUR  # 960 hours: two 31-day pages per query
+    # probe 2 + family 2 + alpha 3 x 2 = 10
+    assert x.count_requests(x.plan_backfill(cfg, settings, start, end), start, int(time.time())) == 10
+    tw = Twitter(page_size=744)
+    with pytest.raises(RuntimeError, match="10 Twitter requests.*limit of 9"):
+        _backfill(tw, cfg, settings, start, end, max_requests=9)
+    assert tw.requests == [] and not (tmp_path / "usage.json").exists()
+    out = _backfill(tw, cfg, settings, start, end, max_requests=10)
+    assert len(tw.requests) == 10  # the count matches what the collector does
+    assert len(out["(alpha OR alphas)"].points["x.alpha-or-alphas.en.posts"]) == 960
+
+
+def test_backfill_count_follows_missing_before(tmp_path):
+    cfg, settings = _config(tmp_path, "alpha"), _settings(tmp_path)
+    start, end = H0, H0 + 40 * 24 * HOUR
+    with db.session(settings.db_path) as conn:
+        db.init(conn, cfg.series)
+        db.replace_hours(conn, "x.alpha-or-alphas.en.posts", [(H0 - 10 * HOUR, 1.0)])  # stored back past start
+        db.replace_hours(conn, "x.probe.en.posts", [(H0 + 5 * 24 * HOUR, 1.0)])  # probe stored from day 6
+    plan = x.plan_backfill(cfg, settings, start, end, missing_before=True)
+    assert [q for q, _, _ in plan] == [cfg.family_queries["anti-trans"], cfg.probe_query]
+    # family: 2 pages and the probe for its window (2); probe series: its own shorter window (1 page)
+    assert x.count_requests(plan, start, int(time.time())) == 5
+    tw = Twitter(page_size=744)
+    with pytest.raises(RuntimeError, match="5 Twitter requests"):
+        _backfill(tw, cfg, settings, start, end, missing_before=True, max_requests=4)
+    assert tw.requests == []
+    _backfill(tw, cfg, settings, start, end, missing_before=True, max_requests=5)
+    assert len(tw.requests) == 5

@@ -16,9 +16,10 @@ is written for that pass, since without it gaps cannot be told from zeros. A pro
 returns no buckets at all for a non-empty window counts as failed in the same way.
 
 Pay-per-use: $0.005 per recent-counts request, $0.010 per full-archive request. Every request,
-each page included, takes one from the shared daily Budget first. When the cap is reached
-mid-pass, the keywords already complete are kept and the rest are left for the next pass; a
-keyword is never written partly. A pass runs the probe first, then the family headline
+each page included, takes one from the shared daily Budget first. That budget is the counter
+file shared with the Bot Traffic Monitor, named by TWITTER_USAGE_FILE; without it no request is
+made at all. When the cap is reached mid-pass, the keywords already complete are kept and the
+rest are left for the next pass; a keyword is never written partly. A pass runs the probe first, then the family headline
 queries, then the terms, so a cut drops terms before the headline.
 """
 
@@ -39,7 +40,11 @@ from . import Result
 RECENT = "https://api.x.com/2/tweets/counts/recent"
 ALL = "https://api.x.com/2/tweets/counts/all"
 HOUR = 3600
+DAY = 86400
+PAGE = 31 * DAY  # a full-archive counts page at hour granularity covers at most 31 days
 PLATFORM = "twitter"
+NO_USAGE_FILE = ("TWITTER_USAGE_FILE is not set: it must name the request counter file shared with "
+                 "the Bot Traffic Monitor, so both stay under one daily cap; no Twitter request made")
 PARTIAL = 0.1  # probe below this share of its median: Twitter coverage of that hour looks partial (logged)
 log = logging.getLogger(__name__)
 
@@ -60,6 +65,11 @@ def recent_start(stop: int, wall: int) -> int:
     was refused)."""
     earliest = -(-(wall - 7 * 24 * HOUR + 60) // HOUR) * HOUR  # whole hours, a minute of margin
     return max(stop - 7 * 24 * HOUR + HOUR, earliest)
+
+
+def _stop(now: int, end: int | None) -> int:
+    """End of a window in whole hours; Twitter wants end_time at least 10 s in the past."""
+    return min(now - 15, end if end is not None else now) // HOUR * HOUR
 
 
 def _iso(ts: int) -> str:
@@ -123,8 +133,7 @@ async def _pass(client: httpx.AsyncClient, budget: Budget, settings: Settings, p
     if not token:
         result.errors.append("Twitter bearer token (X_BEARER_TOKEN) not set")
         return result, False
-    # Whole hours only, and Twitter wants end_time at least 10 s in the past.
-    stop = min(now - 15, end if end is not None else now) // HOUR * HOUR
+    stop = _stop(now, end)
     live = start is None
     begin = recent_start(stop, int(time.time())) if live else start // HOUR * HOUR
     if begin >= stop:
@@ -196,42 +205,106 @@ async def collect(client: httpx.AsyncClient, config: Config, settings: Settings,
                   start: int | None = None, end: int | None = None) -> Result:
     """Data only; nothing is written. `start is None` is the live pass: terms use the recent
     endpoint (last 7 days), the family and probe series the full archive over the same hours.
-    With `start`, a backfill window on the full archive for everything."""
+    With `start`, a backfill window on the full archive for everything. Without a shared usage
+    file (TWITTER_USAGE_FILE) nothing is requested and the result carries the error."""
+    if settings.usage_file is None:
+        return Result(errors=[NO_USAGE_FILE])
     budget = Budget(settings.usage_file, settings.x_max_requests_per_day)
     result, _ = await _pass(client, budget, settings, config.probe_query, list(config.series), now, start, end, {})
     return result
 
 
+class _Capped:
+    """A Budget that also refuses after `limit` requests in this run."""
+
+    def __init__(self, budget: Budget, limit: int):
+        self.budget, self.limit, self.used = budget, limit, 0
+
+    def take(self) -> None:
+        if self.used >= self.limit:
+            raise BudgetExhausted(f"backfill request limit reached ({self.limit})")
+        self.budget.take()
+        self.used += 1
+
+
+def plan_backfill(config: Config, settings: Settings, start: int, end: int | None = None,
+                  missing_before: bool = False) -> list[tuple[str, list[SeriesSpec], int | None]]:
+    """The keyword windows a backfill runs, in order: (query, its series, window end, None for
+    now). With `missing_before`, a window ends where its keyword's earliest stored hour starts,
+    and a keyword already stored back to `start` is left out. Reads the database only."""
+    groups: dict[str, list[SeriesSpec]] = defaultdict(list)
+    for s in config.series:
+        groups[s.query].append(s)
+    if not missing_before:
+        return [(query, specs, end) for query, specs in groups.items()]
+    plan = []
+    with db.session(settings.db_path) as conn:
+        db.init(conn, config.series)
+        for query, specs in groups.items():
+            stop_at = end
+            ranges = [r for r in (db.point_range(conn, s.key) for s in specs) if r]
+            if ranges:
+                # Stored stamps are hour ends: the earliest stored hour starts an hour before.
+                earliest = min(r[0] for r in ranges) - HOUR
+                if earliest <= start:
+                    continue
+                stop_at = earliest if end is None else min(end, earliest)
+            plan.append((query, specs, stop_at))
+    return plan
+
+
+def count_requests(plan: list[tuple[str, list[SeriesSpec], int | None]], start: int, now: int) -> int:
+    """Requests a backfill plan makes if every request succeeds, counted as `_pass` makes them:
+    per window, full-archive pages of at most 31 days at hour granularity; the probe once per
+    distinct window; three per term, one per family query, none more for the probe series."""
+    begin, seen, n = start // HOUR * HOUR, set(), 0
+    for _, specs, stop_at in plan:
+        stop = _stop(now, stop_at)
+        if begin >= stop:
+            continue  # an empty window makes no request
+        pages = -(-(stop - begin) // PAGE)
+        if (begin, stop) not in seen:
+            seen.add((begin, stop))
+            n += pages
+        for is_term, family in {(s.term_id is not None, s.family) for s in specs}:
+            if is_term:
+                n += len(VARIANTS) * pages
+            elif family != "probe":
+                n += pages
+    return n
+
+
 async def backfill(config: Config, settings: Settings, start: int, end: int | None = None,
-                   missing_before: bool = False, client: httpx.AsyncClient | None = None) -> dict[str, Result]:
+                   missing_before: bool = False, client: httpx.AsyncClient | None = None,
+                   max_requests: int | None = None) -> dict[str, Result]:
     """Full-archive history from `start` to `end` (default: now), one Result per keyword, keyed
     by its query. With `missing_before`, a keyword window ends where its earliest stored hour starts,
     and a keyword already stored back to `start` is skipped without any request. Data only; the caller writes it.
+    With `max_requests`, the planned requests are counted first (count_requests) and the backfill
+    is refused before any request if there are more; the run also stops at that many requests.
     `client` is optional: tests pass one built on httpx.MockTransport; by default a real one is
     opened and closed here."""
     if not settings.x_bearer_token:
         raise RuntimeError("Twitter bearer token (X_BEARER_TOKEN) not set")
+    if settings.usage_file is None:
+        raise RuntimeError(NO_USAGE_FILE)
+    now = int(time.time())
+    plan = plan_backfill(config, settings, start, end, missing_before)
+    planned = count_requests(plan, start, now)
+    log.info("backfill: %d Twitter requests planned", planned)
+    if max_requests is not None and planned > max_requests:
+        raise RuntimeError(f"it would make {planned} Twitter requests, more than the limit of "
+                           f"{max_requests} (--max-requests); nothing requested")
+    budget = Budget(settings.usage_file, settings.x_max_requests_per_day)
+    if max_requests is not None:
+        budget = _Capped(budget, max_requests)
     own = client is None
     if own:
         client = httpx.AsyncClient(timeout=45, follow_redirects=True)
-    budget, now, cache = Budget(settings.usage_file, settings.x_max_requests_per_day), int(time.time()), {}
-    groups: dict[str, list[SeriesSpec]] = defaultdict(list)
-    for s in config.series:
-        groups[s.query].append(s)
+    cache: dict = {}
     out: dict[str, Result] = {}
     try:
-        for query, specs in groups.items():
-            stop_at = end
-            if missing_before:
-                with db.session(settings.db_path) as conn:
-                    db.init(conn, config.series)
-                    ranges = [r for r in (db.point_range(conn, s.key) for s in specs) if r]
-                if ranges:
-                    # Stored stamps are hour ends: the earliest stored hour starts an hour before.
-                    earliest = min(r[0] for r in ranges) - HOUR
-                    if earliest <= start:
-                        continue
-                    stop_at = earliest if end is None else min(end, earliest)
+        for query, specs, stop_at in plan:
             result, exhausted = await _pass(client, budget, settings, config.probe_query, specs, now, start, stop_at, cache)
             out[query] = result
             if exhausted:
