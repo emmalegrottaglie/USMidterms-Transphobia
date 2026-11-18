@@ -3,9 +3,10 @@
 # A study's window runs from `pre_days` before the UTC day of its first event to
 # `post_days` after the UTC day of its last. Its reference, the "normal" every index
 # is measured against (100 = normal), is the `reference_days` immediately before the
-# window, so the hour-by-hour index (each hour against the same weekday-hour 1 to 3
-# weeks earlier) has its full comparison period. `events` names entries in events.toml
-# by their `short` label.
+# window. The index is daily: each day's probe-normalised count against the mean of
+# the same weekday in the reference period. Data from before the reference period
+# (the study reads three weeks of it) feeds the placebo row only. `events` names
+# entries in events.toml by their `short` label.
 #
 # A study is built and frozen into studies/<id>/v<N>.json (monitor/study.py). The site
 # shows the newest frozen version. Rebuilding is deliberate: freeze a new version with

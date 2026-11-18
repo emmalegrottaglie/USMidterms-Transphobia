@@ -113,9 +113,10 @@ def frame(study: Study, directory: Path = CONFIG_DIR) -> dict:
 
 
 def data_range(study: Study, directory: Path = CONFIG_DIR) -> tuple[int, int]:
-    """The hours a study reads: the reference start minus three weeks (what the
-    hour-by-hour ratio compares its first hours with) up to just after the window's last
-    hour (the last hour is stamped at the next midnight)."""
+    """The hours a study reads: three weeks before the reference start up to just after
+    the window's last hour (the last hour is stamped at the next midnight). The daily
+    index compares each day with the same weekday in the reference period; the days
+    before the reference period feed only the placebo row."""
     f = frame(study, directory)
     return f["reference_start"] - 21 * DAY, f["end"] + 1
 

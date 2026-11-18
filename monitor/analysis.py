@@ -98,7 +98,11 @@ def band(index: dict[int, float], ref_start: int, ref_end: int) -> tuple[float, 
 
 
 def hourly_ratio(hours: dict[int, float]) -> dict[int, float]:
-    """Each hour vs the mean of the same weekday-hour 1-3 weeks earlier (2 of 3 needed), x 100."""
+    """Each hour vs the mean of the same weekday-hour 1-3 weeks earlier (2 of 3 needed), x 100.
+
+    Not used by the study yet: studies use the daily weekday index (`weekday_index`).
+    Kept while the owner decides whether the study should use it.
+    """
     out = {}
     for h, v in hours.items():
         past = [hours[h - w * WEEK] for w in (1, 2, 3) if h - w * WEEK in hours]
