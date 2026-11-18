@@ -1,0 +1,21 @@
+# Studies: one per event, each a fixed window around it.
+#
+# A study's window runs from `pre_days` before the UTC day of its first event to
+# `post_days` after the UTC day of its last. Its reference, the "normal" every index
+# is measured against (100 = normal), is the `reference_days` immediately before the
+# window, so the hour-by-hour index (each hour against the same weekday-hour 1 to 3
+# weeks earlier) has its full comparison period. `events` names entries in events.toml
+# by their `short` label.
+#
+# A study is built and frozen into studies/<id>/v<N>.json (monitor/study.py). The site
+# shows the newest frozen version. Rebuilding is deliberate: freeze a new version with
+# a note saying what changed.
+
+[[study]]
+id = "us-midterms-2026"
+title = "US midterm elections, 3 November 2026"
+events = ["ELECTION"]
+pre_days = 14
+post_days = 14
+reference_days = 21
+question = "Did explicit anti-trans term volume on Twitter change before and after the 2026 US midterm elections?"

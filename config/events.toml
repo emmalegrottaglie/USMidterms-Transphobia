@@ -1,0 +1,12 @@
+# Annotations drawn on every chart. Keep a source for each entry and say how sure
+# it is: "reported" = claimed in news or social media, "confirmed" = corroborated
+# by an independent measurement or official statement. `short` is the chart label.
+# `at` (UTC, optional) is the moment the event-study windows start from; without it
+# the start is midnight UTC of `date`, which is coarse, so prefer a measured time.
+
+[[event]]
+date = "2026-11-03"
+short = "ELECTION"
+label = "US midterm general election"
+status = "confirmed"
+source = "Federal Election Commission, 'Election results and voting information', https://www.fec.gov/introduction-campaign-finance/election-results-and-voting-information/ (checked 18 November 2026: 'Tuesday, November 3, 2026, is the next regularly scheduled federal General Election date.')"
