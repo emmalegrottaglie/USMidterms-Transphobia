@@ -113,3 +113,32 @@ def test_open_study_round_trips_newlines_quotes_and_backslashes(tmp_path):
     new = tomllib.loads((cdir / "events.toml").read_text(encoding="utf-8"))["event"][-1]
     assert new["label"] == label and new["source"] == source
     assert study.get(sid, cdir).title == label
+
+
+def test_close_if_done_does_not_freeze_without_reference_days(tmp_path, caplog):
+    from test_study import fill, noisy
+    from monitor.config import slug
+    cfg, st, cdir = make_config(), settings_for(tmp_path), config_copy(tmp_path)
+    conn = new_db(tmp_path, cfg)
+    first, last = ts("2026-10-20"), ts("2026-11-17")  # the window only: no reference days
+    fill(conn, "x.probe.en.posts", 1000.0, first, last)
+    for fam in ("anti-trans", "framing"):
+        fill(conn, f"x.family.{fam}.en.posts", 100.0, first, last)
+    for t in cfg.terms:
+        fill(conn, f"x.{slug(t.query)}.en.posts", noisy, first, last)
+    end = study.frame(study.get(directory=cdir), cdir)["end"]
+    with caplog.at_level("WARNING"):
+        assert pause.close_if_done(conn, cfg, end + 1 + DAY, st, cdir, tmp_path / "studies") is None
+    assert pause.state(st) is None and not (tmp_path / "studies").exists()
+    assert "normal range" in caplog.text and "anti-trans" in caplog.text
+
+
+def test_close_if_done_needs_the_probe_on_the_last_window_day(tmp_path, caplog):
+    cfg, st, cdir = make_config(), settings_for(tmp_path), config_copy(tmp_path)
+    conn = new_db(tmp_path, cfg)
+    populate(conn, cfg)
+    conn.execute("DELETE FROM points WHERE key = 'x.probe.en.posts' AND ts > ?", (ts("2026-11-17") + 6 * 3600,))
+    with caplog.at_level("WARNING"):
+        assert pause.close_if_done(conn, cfg, ts("2026-11-20"), st, cdir, tmp_path / "studies") is None
+    assert pause.state(st) is None and not (tmp_path / "studies").exists()
+    assert "probe" in caplog.text

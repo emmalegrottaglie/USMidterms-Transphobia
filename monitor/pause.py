@@ -5,7 +5,10 @@ file next to the database (data/pause.json); its absence means collecting.
 
 Resuming for an event appends the event to config/events.toml and opens a study around it
 in config/studies.toml. After a collection pass, `close_if_done` freezes the newest study
-once its window is over and its data is in, then pauses until the next event.
+once its window is over and its data is in, then pauses until the next event. "Its data is
+in" means every family has a normal range and a before and an after mean, and both the
+probe and every family have a total for the window's last day; otherwise nothing is
+frozen and the reason is logged.
 """
 
 from __future__ import annotations
@@ -16,12 +19,14 @@ import time
 import tomllib
 from pathlib import Path
 
+from . import analysis, db
 from . import study as studies
 from .config import FAMILIES, Config, Settings, slug
 
 log = logging.getLogger(__name__)
 DAY = 86400
-FREEZE_NOTE = "Frozen automatically: the window had ended and every family had its last day."
+FREEZE_NOTE = ("Frozen automatically: the window had ended, every family had a normal range and "
+               "before and after means, and the probe and every family had the window's last day.")
 
 
 def path(settings: Settings) -> Path:
@@ -98,11 +103,39 @@ def resume(settings: Settings, reason: str, event: dict | None = None,
     return opened
 
 
+def incomplete(conn, config: Config, s: studies.Study, built: dict,
+               config_dir: Path = studies.CONFIG_DIR) -> list[str]:
+    """Why a built study is not ready to freeze; empty when it is. Every family with a series
+    needs a normal range (`band`), a before and an after mean, and a day total for the window's
+    last day; the probe needs a day total for that day too."""
+    f = studies.frame(s, config_dir)
+    last_day = f["end"] + 1 - DAY
+    have = [fam for fam in FAMILIES if any(sp.key == f"x.family.{fam}.en.posts" for sp in config.series)]
+    if not have:
+        return ["no family series to check the window against"]
+    why = []
+    for fam in have:
+        info = built["families"][fam]
+        if info["band"] is None:
+            why.append(f"{fam} has no normal range (fewer than {analysis.MIN_REFERENCE_DAYS} reference days)")
+        for phase in ("before", "after"):
+            if info["phases"][phase] is None:
+                why.append(f"{fam} has no {phase} mean")
+        if last_day not in info["raw_daily"]:
+            why.append(f"{fam} has no total for the window's last day")
+    lo, hi = studies.data_range(s, config_dir)
+    if last_day not in analysis.daily_totals(db.points(conn, studies.PROBE_KEY, lo, hi)):
+        why.append("the probe has no total for the window's last day")
+    return why
+
+
 def close_if_done(conn, config: Config, now: int | None = None, settings: Settings | None = None,
                   config_dir: Path = studies.CONFIG_DIR, studies_dir: Path | None = None) -> dict | None:
-    """Freeze the newest study once `now` is at least a day past its window end and every family
-    has a day total for the window's last day, then pause (when `settings` is given). Returns the
-    frozen build with its note, or None. A study with a frozen version is never frozen again."""
+    """Freeze the newest study once `now` is at least a day past its window end and its data is
+    complete (see `incomplete`), then pause (when `settings` is given). Returns the frozen build
+    with its note, or None; when the window is over but the data is not complete, the reasons are
+    logged as a warning and nothing is frozen or paused. A study with a frozen version is never
+    frozen again."""
     now = now or int(time.time())
     s = studies.get(directory=config_dir)
     if s is None or studies.latest(s.id, studies_dir):
@@ -111,11 +144,9 @@ def close_if_done(conn, config: Config, now: int | None = None, settings: Settin
     if now < f["end"] + 1 + DAY:
         return None
     built = studies.build(conn, config, s, now, config_dir)
-    last_day = f["end"] + 1 - DAY
-    have = {sp.family for sp in config.series if sp.key.startswith("x.family.")}
-    if not have:
-        return None  # nothing to check the window against: never freeze an empty study
-    if any(last_day not in built["families"][fam]["raw_daily"] for fam in FAMILIES if fam in have):
+    why = incomplete(conn, config, s, built, config_dir)
+    if why:
+        log.warning("study %s not frozen: %s", s.id, "; ".join(why))
         return None
     studies.freeze(built, FREEZE_NOTE, studies_dir)
     if settings is not None:
