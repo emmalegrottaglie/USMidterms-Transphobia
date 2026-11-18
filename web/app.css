@@ -166,6 +166,60 @@ details.data-table:not(.chart-tools details) { margin: 6px var(--gutter) 0; }
 
 .nodata a { color: var(--a1); }
 
+/* ── Terms, methods, context and data tabs ─────────────────────────────── */
+.tab-head { padding: 6px 0 4px; }
+h2.sect:focus, h3.sect:focus { outline: none; }
+h2.sect:focus-visible { outline: 1px solid var(--a1); outline-offset: -1px; }
+h3.sect { margin: 0; font-family: inherit; }
+.nav:focus { outline: none; }
+.prose, .prose-line {
+  margin: 0; padding: 4px var(--gutter) 6px; color: var(--term-ink); font-size: 12px; line-height: 1.6; letter-spacing: .02em;
+}
+.prose-line { color: var(--term-muted); padding-top: 0; }
+.prose a, .notes a, .facts a { color: var(--a1); }
+.notes code, .prose code, .note code { overflow-wrap: anywhere; }
+.note code { color: var(--term-ink); text-transform: none; }
+
+/* Term entries: hairline grid like the small multiples, one or two columns */
+.terms {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); margin: 6px var(--gutter) 4px;
+  border-top: 1px solid var(--term-line); border-left: 1px solid var(--term-line);
+}
+.term { padding: 9px 10px 8px; border-right: 1px solid var(--term-line); border-bottom: 1px solid var(--term-line); min-width: 0; }
+.term-name { margin: 0; color: var(--term-ink); font-size: 11px; font-weight: 800; letter-spacing: .1em; line-height: 1.35; overflow-wrap: anywhere; }
+.term-vals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 8px 0 6px; }
+.term-vals b { display: block; color: var(--term-ink); font-size: 13px; font-weight: 800; white-space: nowrap; }
+.term-vals b.unknown { color: var(--term-muted); }
+.term-vals span { display: block; margin-top: 2px; color: var(--term-muted); font-size: 10px; letter-spacing: .1em; }
+.term-line { margin: 4px 0 0; color: var(--term-ink); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.term-line .k { color: var(--term-muted); font-size: 10px; font-weight: 800; letter-spacing: .14em; margin-right: 4px; }
+.term-line code { color: var(--a2); }
+@media (max-width: 359px) { .terms { grid-template-columns: 1fr; } }
+
+/* Tables on these tabs: long text wraps, numbers stay on one line */
+.tab-table td.wrap { white-space: normal; min-width: 140px; line-height: 1.45; }
+.tab-table td.q { min-width: 180px; }
+.tab-table td.q code { color: var(--a2); overflow-wrap: anywhere; }
+.tab-table td.t-num, .tab-table td.t-key:not(.wrap) { white-space: nowrap; }
+.tab-table td a { color: var(--a1); }
+.tab-table th:last-child, .tab-table td:last-child { padding-right: var(--gutter); }
+details.data-table .tab-table th:first-child, details.data-table .tab-table td:first-child { padding-left: 0; }
+
+/* Context: outside research in its own frame, apart from our measurements */
+.outside { margin: 8px var(--gutter) 6px; border: 1px solid var(--term-line); }
+.outside .sect, .outside .notes, .outside .facts { padding-left: 12px; padding-right: 12px; }
+.outside-label {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 10px 12px;
+  border-bottom: 1px solid var(--term-line); color: var(--term-muted); font-size: 10px; font-weight: 800; letter-spacing: .14em;
+}
+.facts { display: grid; gap: 10px; margin: 0; padding: 4px var(--gutter) 6px; list-style: none; color: var(--term-ink); font-size: 12px; line-height: 1.6; }
+.facts b { font-weight: 800; }
+.fact-src { display: block; margin-top: 2px; color: var(--term-muted); font-size: 10px; letter-spacing: .08em; }
+.refs li { overflow-wrap: anywhere; }
+
+/* Citation line: plain text a reader can copy */
+.cite { margin: 0 var(--gutter) 8px; padding: 8px 10px; border: 1px solid var(--term-line); color: var(--term-ink); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; user-select: all; }
+
 /* Bottom nav: 44 px targets, clear of the gesture bar */
 .nav { padding: 0 0 env(safe-area-inset-bottom); }
 .nav a { display: flex; align-items: center; justify-content: center; min-height: 44px; font-size: 10px; }
@@ -173,7 +227,8 @@ html { scroll-padding-bottom: 72px; }
 
 /* Phones keep the kit's 1:1 scale, so small running text is raised a step */
 @media (max-width: 479px) {
-  .note, .sub, .tile-label, .table th, .readout, .end, .caption, .legend-item, .data-table summary { font-size: 11px; }
+  .note, .sub, .tile-label, .table th, .readout, .end, .caption, .legend-item, .data-table summary, .outside-label, .fact-src { font-size: 11px; }
+
   .nav a { letter-spacing: .04em; }
   .hero-value { font-size: 78px; line-height: 68px; }
 }
