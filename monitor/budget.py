@@ -41,7 +41,7 @@ class Budget:
                     self.lock_path.unlink()
                     continue
             except OSError:
-                continue  # the lock vanished between the attempt and the check
+                pass  # the lock vanished, or the folder refuses access: wait, until the deadline
             if time.monotonic() >= deadline:
                 raise BudgetExhausted("could not lock the Twitter usage file")
             time.sleep(LOCK_RETRY)
