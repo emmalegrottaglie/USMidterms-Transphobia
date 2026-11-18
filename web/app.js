@@ -1,4 +1,4 @@
-// Anti-trans Rhetoric Monitor: the study page.
+// Anti-trans rhetoric and the 2026 US midterms: the study page.
 //
 // Reads data/study.json (monitor/study.py `build`, or the newest frozen version) and
 // data/terms.json (monitor/static.py) and draws them. No numbers are made up here: a
@@ -470,7 +470,7 @@ function renderTerms() {
 
   $('view').innerHTML = `
     ${tabHead(`Terms · ${tracked} tracked, ${fam('context').length} context, ${screened ?? '—'} screened out or held`,
-      'Every term the monitor counts on Twitter: the search it runs, where the term is documented, how often it is posted, and how often a hand-checked sample of its posts was anti-trans use.')}
+      'Every term this study counts on Twitter: the search it runs, where the term is documented, how often it is posted, and how often a hand-checked sample of its posts was anti-trans use.')}
     <p class="note">POSTS A DAY = MEDIAN ORIGINAL ENGLISH POSTS A DAY, ${esc(windowText())}, DAYS WITH 20 OR MORE HOURS · PRECISION = SHARE OF A HAND-CHECKED SAMPLE THAT WAS ANTI-TRANS USE, 16 NOV 2026 · 95% CI = WILSON INTERVAL · N = POSTS CHECKED</p>
     ${list.length ? '' : '<div class="nodata">NO TERMS · DATA/TERMS.JSON COULD NOT BE LOADED</div>'}
     ${fam('anti-trans').length ? termGroup('Anti-trans terms', 'SLURS AND MEMES · ONE COMBINED SEARCH IS THE FAMILY HEADLINE', fam('anti-trans')) : ''}
@@ -522,13 +522,13 @@ function renderMethods() {
 
   $('view').innerHTML = `
     ${tabHead('Methods · how the numbers are made',
-      'What the monitor counts, how a count becomes an index, how the result is checked, and what a count cannot show.')}
+      'What this study counts, how a count becomes an index, how the result is checked, and what a count cannot show.')}
 
     <h3 class="sect">What is collected</h3>
     <ul class="notes">
       <li>Counts from the Twitter API counts endpoint: how many posts matched a search in each hour. No post is read for the counts, and no usernames or account IDs are collected or stored.</li>
       <li>English posts only (<code>lang:en</code>). Each term gets three counts: original posts (replies included), reposts, and replies. The two family searches and the probe count original posts.</li>
-      <li>Collection runs once a day. Between events it pauses; it starts again when a new event fits the research, which opens a new study.</li>
+      <li>This project covers the 2026 US midterm elections only. Counts were collected from 8 September to 18 November 2026, and collection has stopped. Another event would be studied as a new research project, with its method set before the event.</li>
       <li>A failed or empty request is recorded as an error, never as zero. An hour in which even the probe returns nothing is a gap in Twitter's data: no point is stored for any series in that hour.</li>
       <li>A day needs at least 20 collected hours to get a value. A day with fewer is a gap, shown as “—” and as a break in a line. Gaps are never zeros.</li>
       <li>Times are UTC. Each hourly value is stamped at the end of its hour.</li>
@@ -574,7 +574,7 @@ function renderMethods() {
     </ul>
 
     <h3 class="sect">When the method was fixed</h3>
-    ${p('The midterms data had already been seen when this method was fixed, on 17 November 2026, so what the data showed may have shaped the choices. For future events, the method is registered before the event.')}
+    ${p('The midterms data had already been seen when this method was fixed, on 17 November 2026, so what the data showed may have shaped the choices. Any later research on another event will fix its method before the event.')}
 
     <h3 class="sect">References</h3>
     <ul class="notes refs">
@@ -794,8 +794,8 @@ function route(moveFocus = false) {
   $('view').hidden = !ready;
   if (ready) ROUTES[current]();
   document.title = current === 'study'
-    ? `${study ? `${study.title} · ` : ''}Anti-trans Rhetoric Monitor`
-    : `${TAB_NAME[current]} · Anti-trans Rhetoric Monitor`;
+    ? 'Anti-trans Rhetoric and the 2026 US Midterms'
+    : `${TAB_NAME[current]} · Anti-trans Rhetoric and the 2026 US Midterms`;
   if (moveFocus) {
     window.scrollTo(0, 0);
     (current === 'study' || !ready ? $('title') : $('tab-h'))?.focus({ preventScroll: true });
@@ -837,7 +837,7 @@ async function start() {
     return;
   }
   M = buildModel(study);
-  $('title').textContent = `ANTI-TRANS RHETORIC MONITOR · ${study.title.toUpperCase()}`;
+  $('title').textContent = 'ANTI-TRANS RHETORIC AND THE 2026 US MIDTERMS';
   const asOf = isoTs(study.as_of);
   $('sub-left').textContent = `TWITTER · ENGLISH · ORIGINAL POSTS · DATA TO ${asOf ? dmy(asOf) : '—'}`;
   $('provisional').innerHTML = study.provisional ? '<span class="chip three">PROVISIONAL</span>' : '';

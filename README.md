@@ -1,6 +1,8 @@
-# Anti-trans rhetoric monitor
+# Anti-trans rhetoric and the 2026 US midterms
 
-Measures how often anti-trans terms appear on Twitter, as hourly counts. Split from the Russian bot tracker; it runs on its own and shares only the Twitter request counter.
+Measures how often anti-trans terms appeared on Twitter around the 2026 US midterm elections (3 November 2026), as hourly counts. Split from the Russian bot tracker; it runs on its own and shares only the Twitter request counter.
+
+This project covers the 2026 midterms only (Emma, 18 November 2026). Data was collected from 8 September to 18 November 2026, version 1 of the study is frozen, and collection is paused for good. If another event calls for the same question, it becomes a new research project with its own method, set before the event, rather than a new study here.
 
 Counts only: no usernames, account IDs or post text are stored.
 
@@ -36,7 +38,7 @@ Run them from the project folder with `.venv\Scripts\python.exe -m monitor <comm
 4. `export --out <folder>` writes the static site and the data downloads. Without a frozen version the site shows the study as provisional.
 5. `publish` exports to a temporary folder and force-pushes it to the `gh-pages` branch (`--no-push` exports only).
 
-`collect` runs one live pass (three requests per term plus the two family searches and the probe: 54 with the 17 terms in `config/terms.toml` today) and is meant to run once a day while a study is open. It does nothing while collection is paused (`pause --reason ...`; `resume ...` opens a study around a new event). After a pass it checks the newest study: once a day has passed since the window ended and the study's data is complete (every family has a normal range, a before and an after mean, and the probe and every family have the window's last day), it freezes the study and pauses collection. If the data is not complete it freezes nothing and logs why. `close-if-done` runs the same check without collecting.
+`collect` runs one live pass (three requests per term plus the two family searches and the probe: 54 with the 17 terms in `config/terms.toml` today) and ran once a day while the midterms study was open; the project no longer collects. It does nothing while collection is paused (`pause --reason ...`; `resume ...` opens a study around a new event). After a pass it checks the newest study: once a day has passed since the window ended and the study's data is complete (every family has a normal range, a before and an after mean, and the probe and every family have the window's last day), it freezes the study and pauses collection. If the data is not complete it freezes nothing and logs why. `close-if-done` runs the same check without collecting.
 
 Freezing a study (`study build --freeze --note "..."`, or `collect` as above) and publishing the site are the owner's decisions. A frozen version is what the site shows; changing it means freezing a new version with a note saying what changed.
 

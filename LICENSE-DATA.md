@@ -10,7 +10,7 @@ This covers:
 - the frozen study versions in `studies/`;
 - the text of the site and of `docs/`.
 
-You may copy, share and adapt them for any purpose, including commercially, as long as you credit the project. A suitable credit is: Emma Legrottaglie, Anti-trans rhetoric monitor, https://emmalegrottaglie.github.io/USMidterms-Transphobia/ (see `CITATION.cff`).
+You may copy, share and adapt them for any purpose, including commercially, as long as you credit the project. A suitable credit is: Emma Legrottaglie, Anti-trans rhetoric and the 2026 US midterms, https://emmalegrottaglie.github.io/USMidterms-Transphobia/ (see `CITATION.cff`).
 
 Two things are not ours to licence:
 

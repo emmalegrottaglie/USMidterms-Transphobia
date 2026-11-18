@@ -2,6 +2,8 @@
 
 Repository: `emmalegrottaglie/USMidterms-Transphobia` (public, created 17 November 2026). Written 17 November 2026 from Emma's decisions in the session that started on 16 November. Items marked **(Claude's call)** are proposals Emma has not explicitly approved; everything else is hers.
 
+**Scope change (Emma, 18 November 2026):** the project covers the 2026 US midterms only, titled "Anti-trans rhetoric and the 2026 US midterms". Study v1 is frozen and collection has stopped. If another event calls for the same question, it becomes a new research project with its method fixed before the event, not a new study in this repository. That settles two open questions: the daily index stays (v1 is built on it), and the shared Twitter cap goes back to the Bot Traffic Monitor.
+
 ## Intent
 
 Measure anti-trans rhetoric on social media around political events, starting with the US midterm elections of 3 November 2026, and show it with strong graphics. The project grew out of the Bot Traffic Monitor (`C:\Russian bot tracker`, emmalegrottaglie/Russian-Bot-Monitor) but is a separate site and a separate codebase: it measures transphobic activity in general, not bots.
