@@ -7,3 +7,7 @@ authors:
     given-names: Emma
 repository-code: "https://github.com/emmalegrottaglie/USMidterms-Transphobia"
 url: "https://emmalegrottaglie.github.io/USMidterms-Transphobia/"
+# Code: MIT. Data and text: CC BY 4.0 (LICENSE-DATA.md).
+license:
+  - MIT
+  - CC-BY-4.0

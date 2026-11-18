@@ -736,6 +736,13 @@ function renderData() {
       <li>The files hold timestamps and aggregate hourly counts only. They hold no post text, usernames or account IDs, and the database has none to export.</li>
       <li>A failed or empty fetch is recorded as an error, not a zero. Missing hours are left out of the files, and a day with fewer than 20 hours has no daily value.</li>
       <li>The counts come from the Twitter API. How they are turned into an index is on the <a href="#methods">Methods</a> tab.</li>
+    </ul>
+
+    <h3 class="sect">Licence</h3>
+    <ul class="notes">
+      <li>The data, the study files and the text of this site are under <a href="https://creativecommons.org/licenses/by/4.0/" rel="noopener">CC BY 4.0</a>: reuse them for any purpose, crediting the project as in the citation above.</li>
+      <li>The code is under the <a href="https://github.com/emmalegrottaglie/USMidterms-Transphobia/blob/main/LICENSE" rel="noopener">MIT License</a>. Details: <a href="https://github.com/emmalegrottaglie/USMidterms-Transphobia/blob/main/LICENSE-DATA.md" rel="noopener">LICENSE-DATA.md</a>.</li>
+      <li>Figures quoted on the Context tab belong to their sources; cite them, not this project.</li>
     </ul>`;
   enhance($('view'));
   fillData();

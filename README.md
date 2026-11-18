@@ -49,3 +49,7 @@ python -m venv .venv
 ```
 
 The UI follows `terminal-design-system/`, a copy of the canonical folder in the bot tracker repo. Do not edit it here; see its `AGENTS.md`.
+
+## Licence
+
+Code: MIT (`LICENSE`). Data, study files and written material: CC BY 4.0 (`LICENSE-DATA.md`), which also says what is not ours to licence.
