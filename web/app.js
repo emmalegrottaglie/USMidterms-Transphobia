@@ -387,7 +387,7 @@ function renderStudy() {
     <details class="data-table"><summary>LEAVE-ONE-OUT BY TERM</summary>${looTable}</details>
     <ul class="notes">
       <li>The headline is one combined search per family, so a single term cannot be removed from it; leaving one term out is done on the breadth index instead.</li>
-      <li>The last row is the share of days with data before the study window whose index was as far from normal as the after-phase mean, in the same direction: how often a value like it turned up without the event.</li>
+      <li>The last row is the share of days with data before the reference period whose index was as far from normal as the after-phase mean, in the same direction: how often a value like it turned up without the event.</li>
     </ul>
 
     <h2 class="sect">Data for researchers</h2>
@@ -552,7 +552,7 @@ function renderMethods() {
       <li>Leave one term out. This is done on breadth, because each family’s headline is one combined search and a single term cannot be taken out of it.</li>
       <li>With and without the probe: the family index from raw counts as well as from probe-normalised counts.</li>
       <li>Original posts and reposts: the terms’ raw counts added up, once for original posts and once for reposts, each as a weekday index.</li>
-      <li>Placebo share: of the days with data before the study window, reference days included, the share whose index was as far from 100 as the after-phase mean, in the same direction. It shows how often a value like it turned up without the event.</li>
+      <li>Placebo share: of the days with data before the reference period, the share whose index was as far from 100 as the after-phase mean, in the same direction. It shows how often a value like it turned up without the event. Reference days are left out, because they set what 100 means and so cannot also test it.</li>
     </ul>
 
     <h3 class="sect">Precision checks</h3>

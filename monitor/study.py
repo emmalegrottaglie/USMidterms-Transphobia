@@ -149,11 +149,12 @@ def _iso(ts: int) -> str:
 
 
 def _placebo_share(daily: dict[int, float], f: dict, study: Study, data_start: int) -> float | None:
-    """Of the days from the start of the data up to the day before the window that
-    have an index value, the share at or above the after-phase mean (at or below it
-    when the after mean is under 100). None when there are no such days or no after mean."""
+    """Of the days from the start of the data up to the day before the reference period
+    that have an index value, the share at or above the after-phase mean (at or below it
+    when the after mean is under 100). Reference days are left out: they define 100, so
+    they cannot also test it. None when there are no such days or no after mean."""
     after = _after(daily, f, study)
-    days = [v for d, v in daily.items() if data_start <= d < f["start"]]
+    days = [v for d, v in daily.items() if data_start <= d < f["reference_start"]]
     if after is None or not days:
         return None
     hits = sum(1 for v in days if (v >= after if after >= 100 else v <= after))

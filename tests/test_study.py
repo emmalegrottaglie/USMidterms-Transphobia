@@ -151,10 +151,28 @@ def test_placebo_share_on_synthetic_data(tmp_path):
 
     populate(conn, cfg, family=family)
     built = study.build(conn, cfg, the_study(), now=ts("2026-11-18") + HOUR)
-    # 8 Sep to 19 Oct is 42 days (up to the day before the window); three of them index to well over the after mean (~150).
-    # Weekday means come from the reference only, so the high days index at 300.
-    assert built["robustness"]["anti-trans"]["placebo_share"] == round(3 / 42, 3)
+    # Placebo days run from the start of the data to the day before the reference period:
+    # 8 to 28 Sep, 21 days, three of them well over the after mean (~150). Reference days
+    # are left out: they define 100, so they cannot also test it. Weekday means come from
+    # the reference only, so the high days index at 300.
+    assert built["robustness"]["anti-trans"]["placebo_share"] == round(3 / 21, 3)
     assert first < ref_start
+
+
+def test_placebo_share_leaves_out_reference_days(tmp_path):
+    cfg = make_config()
+    conn = new_db(tmp_path, cfg)
+    # Only the reference days (29 Sep to 19 Oct) exist before the window: no placebo days.
+    first = ts("2026-09-29")
+
+    def family(d):
+        return 150.0 if d > ts("2026-11-03") else 100.0
+
+    fill(conn, "x.probe.en.posts", 1000.0, first, ts("2026-11-17"))
+    fill(conn, "x.family.anti-trans.en.posts", family, first, ts("2026-11-17"))
+    built = study.build(conn, cfg, the_study(), now=ts("2026-11-18") + HOUR)
+    assert built["families"]["anti-trans"]["phases"]["after"] is not None
+    assert built["robustness"]["anti-trans"]["placebo_share"] is None
 
 
 def test_placebo_share_is_none_without_data(tmp_path):
