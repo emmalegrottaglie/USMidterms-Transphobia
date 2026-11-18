@@ -58,6 +58,11 @@ def rejected() -> dict:
     return {"source": SOURCE_NOTE, "run": "2026-11-16", "terms": rows}
 
 
+def _is_count(spec) -> bool:
+    """True for series of counts (posts, reposts, replies an hour); False for shares such as % REPOSTS."""
+    return "%" not in spec.unit
+
+
 def _json(path: Path, data) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
@@ -159,7 +164,7 @@ def export(conn: sqlite3.Connection, config: Config, settings: Settings, out: Pa
     _json(data / "terms.json", terms)
     _json(data / "rejected.json", rejected())
 
-    # Series: hourly CSV and JSON per key, daily CSV for all.
+    # Series: hourly CSV and JSON per key; daily CSV for the count series only.
     daily_rows = []
     folder = data / "series"
     folder.mkdir(parents=True, exist_ok=True)
@@ -171,7 +176,8 @@ def export(conn: sqlite3.Connection, config: Config, settings: Settings, out: Pa
             w.writerows([_iso(t), v] for t, v in pts)
         _json(folder / f"{s.key}.json", {"key": s.key, "label": s.label, "unit": s.unit, "family": s.family,
                                          "points": [[_iso(t), v] for t, v in pts]})
-        daily_rows += [[_iso(d)[:10], s.key, v] for d, v in sorted(analysis.daily_totals(pts).items())]
+        if _is_count(s):  # a day's sum of hourly percentages means nothing, so shares stay hourly only
+            daily_rows += [[_iso(d)[:10], s.key, v] for d, v in sorted(analysis.daily_totals(pts).items())]
     with (data / "daily.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["day_utc", "key", "value"])

@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 
 from test_pause import config_copy, settings_for
-from test_study import HOUR, make_config, new_db, populate, ts
+from test_study import HOUR, fill, make_config, new_db, populate, ts
 
 from monitor import __main__ as cli
 from monitor import ROOT, db, static, study
@@ -39,6 +39,21 @@ def test_export_writes_every_series_csv(tmp_path):
     assert daily[0] == ["day_utc", "key", "value"]
     assert (out / ".nojekyll").exists()
     assert (out / "design" / "terminal.css").exists()
+
+
+def test_daily_csv_has_counts_only_never_repost_share(tmp_path):
+    # A daily total of hourly percentages means nothing, so share series stay out of daily.csv.
+    cfg, st = make_config(), settings_for(tmp_path)
+    conn = new_db(tmp_path, cfg)
+    populate(conn, cfg)
+    share = next(s.key for s in cfg.series if s.metric == "repost-share")
+    fill(conn, share, lambda d: 40.0, ts("2026-09-08"), ts("2026-11-17"))
+    out = static.export(conn, cfg, st, tmp_path / "site", NOW, config_copy(tmp_path), tmp_path / "studies")
+    keys = {r[1] for r in read_csv(out / "data" / "daily.csv")[1:]}
+    assert share not in keys
+    assert not any(k.endswith(".repost-share") for k in keys)
+    assert "x.a1.en.posts" in keys and "x.probe.en.posts" in keys
+    assert (out / "data" / "series" / f"{share}.csv").exists()  # the hourly file is still written
 
 
 def test_csv_has_no_rows_for_gap_hours(tmp_path):

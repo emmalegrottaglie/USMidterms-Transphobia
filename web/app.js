@@ -558,7 +558,7 @@ function renderMethods() {
     <h3 class="sect">Precision checks</h3>
     ${p(`On 16 November 2026, up to 50 recent English original posts were read for each of ${prec.searches || '—'} searches: about 25 ending about one day earlier and 25 ending about four days earlier, ${prec.posts ? int(prec.posts) : '—'} posts in all. Usernames and links were stripped, nothing was stored, and the text was deleted after coding.`)}
     ${p('Each post was coded as anti-trans use, pushback, neutral or news, another meaning, or unclear. Precision is the share coded as anti-trans use, with a 95% Wilson interval. With 50 posts the intervals are wide: 80% observed means roughly 67% to 89%.')}
-    ${p('Four coding agents shared the work. They split on one rule: some counted news-style headlines and AI-assistant replies that repeat the framing as anti-trans use, others counted them as neutral. That moves a few terms by up to about 12 points.')}
+    ${p('The coding was done by four AI coding agents (Claude subagents), not by people. They split on one rule: some counted news-style headlines and AI-assistant replies that repeat the framing as anti-trans use, others counted them as neutral. That moves a few terms by up to about 12 points.')}
     ${p('Only terms at 70% or more are tracked in a family. Each term’s query and source are on the <a href="#terms">Terms</a> tab.')}
     ${prec.html}
 
@@ -596,7 +596,7 @@ const CONTEXT_SOURCES = [
 const CONTEXT_GROUPS = [
   ['How much was spent', [
     ['AdImpact, reported by AP', 'Republicans aired transgender-themed general-election ads about 217,000 times, for an estimated $183M up to 25 October 2026. At the same point in 2024 the figure was about $151M. Democrats spent about $11M on trans-related ads.', 'ap'],
-    ['Wesleyan Media Project', 'Transgender issues came up in 14% of pro-Republican House ad airings from 1 January 2025 to 2 August 2026, the tenth most common topic.', 'wmp'],
+    ['Wesleyan Media Project', 'The release names attacks on transgender people as the tenth most common topic in pro-Republican House ads, in 14% of airings, from 1 January 2025 to 2 August 2026. Its Table 2 labels the matching row “LGBTQ Issues / Rights” (13.9%), listed about twelfth.', 'wmp'],
     ['Metro Weekly', 'About $187M across nine states: Arizona, Colorado, Georgia, Missouri, Nebraska, Ohio, Texas, Washington and Wisconsin. The article names no data source for this figure. The Human Rights Campaign put the cycle’s anti-trans ad spending at nearly $400M.', 'metro'],
   ]],
   ['Who paid, and where', [
@@ -707,7 +707,7 @@ function renderData() {
     <h3 class="sect">Files</h3>
     ${tableWrap('Data files', `${th('FILE')}${th('WHAT IT HOLDS')}`, [
       fileRow('data/study.json', 'STUDY.JSON', 'Every number on the study page: the daily index of each family and term, normal ranges, before, event-day and after means, breadth and robustness. Provisional until a version is frozen.'),
-      fileRow('data/daily.csv', 'DAILY.CSV', 'Daily totals for every series: <code>day_utc, key, value</code>. Only days with 20 or more hours are listed. For <code>repost-share</code> keys the value is a sum of hourly percentages, not a share: use the hourly files for those.'),
+      fileRow('data/daily.csv', 'DAILY.CSV', 'Daily totals for every count series (posts, reposts and replies): <code>day_utc, key, value</code>. Only days with 20 or more hours are listed. The repost share is hourly only, in its own files.'),
       fileRow('data/terms.json', 'TERMS.JSON', 'Each term: group, query, source, precision, 95% interval, posts checked, date added and median posts a day.'),
       fileRow('data/rejected.json', 'REJECTED.JSON', 'Searches screened out or held in the precision check of 16 November 2026, with the reason for each.'),
       fileRow('CITATION.cff', 'CITATION.CFF', 'How to cite the project, in Citation File Format.'),

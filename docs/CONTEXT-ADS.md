@@ -9,7 +9,7 @@ These figures come from other organisations, not from this project's data. This 
 ## How much was spent
 
 - **AdImpact, reported by AP (28 October 2026).** Republicans aired transgender-themed general-election ads about 217,000 times, for an estimated $183M up to 25 October 2026. At the same point in 2024 the figure was about $151M. Democrats spent about $11M on trans-related ads. Source: [AP story by Peoples and Kessler, republished by News4JAX](https://www.news4jax.com/news/politics/2026/10/28/republicans-emphasize-transgender-ads-putting-cultural-issues-over-voters-economic-anxiety/).
-- **Wesleyan Media Project (13 August 2026).** Transgender issues came up in 14% of pro-Republican House ad airings from 1 January 2025 to 2 August 2026, the tenth most common topic. Source: [Wesleyan Media Project release](https://mediaproject.wesleyan.edu/releases-081326/).
+- **Wesleyan Media Project (13 August 2026).** The release names "attacks on transgender people" as the tenth most common topic in pro-Republican House ads, in 14% of airings, from 1 January 2025 to 2 August 2026. Its Table 2 labels the matching row "LGBTQ Issues / Rights" (13.9%), listed about twelfth (re-checked on the page on 18 November 2026). Source: [Wesleyan Media Project release](https://mediaproject.wesleyan.edu/releases-081326/).
 - **Metro Weekly (11 November 2026).** About $187M across nine states (Arizona, Colorado, Georgia, Missouri, Nebraska, Ohio, Texas, Washington and Wisconsin). The article names no data source for this figure and does not attribute it to GLAAD. The Human Rights Campaign put the cycle's anti-trans ad spending at "nearly $400 million". Source: [Metro Weekly](https://www.metroweekly.com/2026/11/anti-trans-ads-midterm-voters/).
 
 ## Who paid, and where
