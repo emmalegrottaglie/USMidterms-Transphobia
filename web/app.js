@@ -366,7 +366,7 @@ function renderStudy() {
     <div class="chart-tools">${tableToggle(dailyTable('Daily index by family, 100 = normal', [
       { head: 'ANTI-TRANS', values: antiVals }, { head: 'FRAMING', values: framVals }, { head: 'BREADTH (ANTI-TRANS)', values: breadthVals }]))}</div>
     <ul class="notes">
-      <li>Each family line is one combined Twitter search for its terms, so a post matching several terms counts once. Each day's count of matching original English posts is divided by a common-word probe (posts with “thing”, “any” or “tell”), then compared with the same weekday in the reference period, ${M.refRange}.</li>
+      <li>Each family line is one combined Twitter search for its terms, so a post matching several terms counts once. Each day's count of matching original English posts is divided by a common-word probe (posts with “thing”, “any” or “tell”) over the same hours, then compared with the same weekday in the reference period, ${M.refRange}.</li>
       <li>Breadth averages the ${countOf('anti-trans')} anti-trans terms with equal weight, so one busy term cannot carry it.${leftOut.length ? ` Left out because they have fewer than 14 reference days with a value, or no variation in them: ${esc(leftOut.join(', '))}.` : ''}</li>
       <li>Counts include people quoting the words to object. A gap in a line is a day with fewer than 20 hours collected, not a quiet day.</li>
     </ul>
@@ -534,6 +534,7 @@ function renderMethods() {
 
     <h3 class="sect">Probe normalisation</h3>
     ${p('Posting on Twitter rises and falls for reasons that have nothing to do with trans people: on election night far more people post about everything. So each count is divided by a probe, the number of English original posts containing “thing”, “any” or “tell”. These common words follow overall activity. The probe words and the idea of using them as a baseline come from Hickey et al. (PLOS ONE, 2025), who used them to sample English Twitter and compared weekly hate volume with that baseline. Dividing each count by the probe is this site’s choice, not theirs.')}
+    ${p('A day’s count and its probe are added up over the same hours. If a search is missing some hours of a day, those hours are left out of the probe too, so a missing hour never reads as a quiet one. A day needs at least 20 hours that both have.')}
     ${p('Each family’s headline is one combined search for all its terms, so a post that matches several terms counts once.')}
 
     <h3 class="sect">The index and the normal range</h3>

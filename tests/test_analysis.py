@@ -28,10 +28,32 @@ def test_daily_totals_end_of_hour_stamp_belongs_to_previous_day():
     assert analysis.daily_totals([(DAY, 5.0)], min_hours=1) == {0: 5.0}
 
 
+def _day(day, value, hours=range(24)):
+    """Hourly points for the given hours of a day, stamped at each hour's end."""
+    return [(day + (h + 1) * HOUR, value(h) if callable(value) else value) for h in hours]
+
+
 def test_rate_skips_days_without_probe():
-    series = {0: 10.0, DAY: 20.0, 2 * DAY: 30.0}
-    probe = {0: 100.0, DAY: 0.0}
+    series = _day(0, 10.0) + _day(DAY, 20.0) + _day(2 * DAY, 30.0)
+    probe = _day(0, 100.0) + _day(DAY, 0.0)
     assert analysis.rate(series, probe) == {0: 0.1}
+
+
+def test_rate_compares_series_and_probe_over_the_same_hours():
+    # The term misses the last 3 hours of the day, when the probe is four times busier.
+    series = _day(0, 10.0, range(21))
+    probe = _day(0, lambda h: 400.0 if h >= 21 else 100.0)
+    assert analysis.rate(series, probe) == {0: 210 / 2100}  # 21 shared hours, not 24 probe hours
+    # A probe gap counts the same way: the series hour it lacks is left out too.
+    assert analysis.rate(_day(0, 10.0), _day(0, 100.0, range(22))) == {0: 0.1}
+
+
+def test_rate_needs_twenty_shared_hours():
+    probe = _day(0, 100.0)
+    assert analysis.rate(_day(0, 10.0, range(20)), probe) == {0: 0.1}
+    assert analysis.rate(_day(0, 10.0, range(19)), probe) == {}
+    # 20 series hours and 20 probe hours, but only 16 of them shared
+    assert analysis.rate(_day(0, 10.0, range(20)), _day(0, 100.0, range(4, 24))) == {}
 
 
 def test_weekday_index_uses_same_weekday():

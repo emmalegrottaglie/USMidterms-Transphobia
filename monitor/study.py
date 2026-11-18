@@ -168,7 +168,8 @@ def build(conn, config: Config, study: Study, now: int | None = None,
     Time values: `window`, `reference`, event `ts` and day keys are UTC seconds (day
     keys are day starts) as ints; `as_of` (latest stored probe point) and `built_at`
     are ISO-8601 UTC strings ("...Z"); `as_of` is None with no probe data. Families
-    and terms carry daily weekday indexes of their probe-normalised rate (100 = a
+    and terms carry daily weekday indexes of their probe-normalised rate (each day the
+    series total over the probe total, over the hours both have; 100 = a
     normal weekday), their `band` (5th-95th percentile of the reference days, None
     with fewer than 14) and their `phases`; `raw_daily` is the family's raw daily post
     count. Breadth carries `phases` too. Unknown values are None or absent, never 0.
@@ -182,14 +183,16 @@ def build(conn, config: Config, study: Study, now: int | None = None,
     def totals(key: str) -> dict[int, float]:
         return analysis.daily_totals(db.points(conn, key, lo, hi))
 
+    def rate(key: str) -> dict[int, float]:  # over the hours the series and the probe share
+        return analysis.rate(db.points(conn, key, lo, hi), probe_pts)
+
     probe_pts = db.points(conn, PROBE_KEY, lo, hi)
-    probe = analysis.daily_totals(probe_pts)
     as_of = _iso(probe_pts[-1][0]) if probe_pts else None
 
     families: dict[str, dict] = {}
     for fam in FAMILIES:
         raw = totals(f"x.family.{fam}.en.posts")
-        daily = analysis.weekday_index(analysis.rate(raw, probe), rs, re_)
+        daily = analysis.weekday_index(rate(f"x.family.{fam}.en.posts"), rs, re_)
         bnd = analysis.band(daily, rs, re_)
         families[fam] = {"daily": daily, "raw_daily": raw, "band": list(bnd) if bnd else None,
                          "phases": _phases(daily, f, study)}
@@ -197,7 +200,7 @@ def build(conn, config: Config, study: Study, now: int | None = None,
     terms_out = []
     rates: dict[str, dict[int, float]] = {}
     for t in config.terms:
-        rates[t.id] = analysis.rate(totals(by_term_metric[(t.id, "posts")]), probe)
+        rates[t.id] = rate(by_term_metric[(t.id, "posts")])
         daily = analysis.weekday_index(rates[t.id], rs, re_)
         bnd = analysis.band(daily, rs, re_)
         terms_out.append({"id": t.id, "label": t.label, "family": t.family, "precision": t.precision,

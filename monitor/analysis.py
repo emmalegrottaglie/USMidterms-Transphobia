@@ -39,9 +39,26 @@ def daily_totals(points: list[tuple[int, float]], min_hours: int = 20) -> dict[i
     return {d: s for d, s in sums.items() if counts[d] >= min_hours}
 
 
-def rate(series: dict[int, float], probe: dict[int, float]) -> dict[int, float]:
-    """day -> series / probe, only where both exist and probe > 0."""
-    return {d: v / probe[d] for d, v in series.items() if d in probe and probe[d] > 0}
+def rate(series: list[tuple[int, float]], probe: list[tuple[int, float]],
+         min_hours: int = 20) -> dict[int, float]:
+    """UTC day start -> the series' total / the probe's total, both summed over the same hours.
+
+    Takes hourly points (stamped at each hour's end). Only hours present in both the
+    series and the probe count, so a series missing some hours of a day is compared with
+    the probe over those same hours, not the whole day. A day needs `min_hours` shared
+    hours and a positive probe total; otherwise it is absent.
+    """
+    probe_at = dict(probe)
+    sums: dict[int, list[float]] = {}
+    for ts, value in series:
+        if ts not in probe_at:
+            continue
+        day = ((ts - HOUR) // DAY) * DAY
+        acc = sums.setdefault(day, [0.0, 0.0, 0])
+        acc[0] += value
+        acc[1] += probe_at[ts]
+        acc[2] += 1
+    return {d: s / p for d, (s, p, n) in sums.items() if n >= min_hours and p > 0}
 
 
 def weekday_index(daily: dict[int, float], ref_start: int, ref_end: int) -> dict[int, float]:

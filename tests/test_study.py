@@ -258,3 +258,22 @@ def test_breadth_phases_are_null_without_data(tmp_path):
     built = study.build(conn, cfg, the_study(), now=ts("2026-11-18") + HOUR)
     assert built["breadth"]["anti-trans"]["phases"] == {"before": None, "during": None, "after": None}
     assert all(t["band"] is None for t in built["terms"])
+
+
+def test_term_rate_uses_only_hours_the_probe_shares(tmp_path):
+    cfg = make_config()
+    conn = new_db(tmp_path, cfg)
+    # The probe is four times busier from 21:00 to 24:00; terms post 10 an hour all day.
+    for d in range(ts("2026-09-08"), ts("2026-11-17") + 1, DAY):
+        db.upsert_points(conn, "x.probe.en.posts", [(d + (h + 1) * HOUR, 400.0 if h >= 21 else 100.0) for h in range(24)])
+    for t in cfg.terms:
+        fill(conn, f"x.{slug(t.query)}.en.posts", 10.0, ts("2026-09-08"), ts("2026-11-17"))
+    # a1 misses its last 3 hours on 10 Nov: compared over the same 21 probe hours, its rate is
+    # 10/100, which is lower than a normal day's 240/3300, so its index is well above 100.
+    day = ts("2026-11-10")
+    conn.execute("DELETE FROM points WHERE key = 'x.a1.en.posts' AND ts > ? AND ts <= ?", (day + 21 * HOUR, day + DAY))
+    built = study.build(conn, cfg, the_study(), now=ts("2026-11-18") + HOUR)
+    a1 = next(t for t in built["terms"] if t["id"] == "a1")
+    assert abs(a1["daily"][day] - (10 / 100) / (240 / 3300) * 100) < 1e-6
+    a2 = next(t for t in built["terms"] if t["id"] == "a2")
+    assert abs(a2["daily"][day] - 100) < 1e-6
