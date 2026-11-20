@@ -375,6 +375,8 @@ function renderStudy() {
       <li>Counts include people quoting the words to object. A gap in a line is a day with fewer than 20 hours collected, not a quiet day.</li>
     </ul>
 
+    ${oct20Note()}
+
     <h2 class="sect">Each term · same scale</h2>
     ${grid('ANTI-TRANS TERMS', familyTerms('anti-trans'), 's-anti')}
     ${grid('FRAMING TERMS', familyTerms('framing'), 's-framing')}
@@ -631,6 +633,29 @@ function adsNote() {
       <ul class="notes">
         <li>These figures come from other organisations. This project counts Twitter posts; the charts below show when the language rose and fell alongside the campaign, not whether the ads caused it.</li>
         <li>More on the <a href="#context">Context</a> tab.</li>
+      </ul>
+    </section>`;
+}
+
+// The 20 October check (docs/OCT20-CHECK.md): a one-off read of sampled posts, outside the
+// frozen study. Tallies only; no post text, post IDs or account data are kept or shown.
+function oct20Note() {
+  const doc = 'https://github.com/emmalegrottaglie/USMidterms-Transphobia/blob/main/docs/OCT20-CHECK.md';
+  const row = (day, coded, anti, copied) => `<tr><td class="t-key">${day}</td><td class="t-num">${coded}</td><td class="t-num">${anti}</td><td class="t-num">${copied}</td></tr>`;
+  return `<section class="outside" aria-labelledby="oct20-label">
+      <div class="outside-label" id="oct20-label"><span class="chip two">ONE-OFF CHECK</span><span>WHAT DROVE THE RISE ON 20 OCTOBER · OUTSIDE THE FROZEN STUDY</span></div>
+      <ul class="facts">
+        <li><b>The rise.</b> From about 13:00 UTC on 20 October 2026, four framing terms stepped up and stayed high until the election, while overall Twitter volume did not change. Original posts a day, 19 then 20 October: “child mutilation” 318 then 620, “men in women’s sports” 445 then 709, “transing kids” 152 then 252, “biological male” 677 then 781.</li>
+        <li><b>No single news event.</b> Sampled posts from 20 October are a mix: attacks on Senate candidates in Texas (James Talarico) and Michigan (Abdul El-Sayed), lists of grievances about Democrats, reply storms, a WNBA eligibility statement and a story about fake LGBTQ mailers.</li>
+        <li><b>Copy-pasted replies, one account per text.</b> On 20 October, 28 of 185 sampled posts (15%) repeated another post word for word, against 2 of 179 (1%) on 19 October. Counting authors showed each copied text came from a single account posting it 2 to 8 times, seven accounts in all. No text was shared between accounts. The rest of the sample came from many people: 145 accounts wrote the other 160 posts.</li>
+      </ul>
+      ${tableWrap('Sampled posts from 19 and 20 October 2026, four framing terms', `${th('DAY')}${th('CODED', 't-num')}${th('ANTI-TRANS', 't-num')}${th('COPIED', 't-num')}`,
+        row('19 OCT', '179', '141 · 79%', '2 · 1%') + row('20 OCT', '185', '156 · 84%', '28 · 15%'))}
+      <p class="caption">CODED = SAMPLED POSTS CODED · ANTI-TRANS = POSTS USING THE TERM AGAINST TRANS PEOPLE · COPIED = POSTS REPEATING ANOTHER POST WORD FOR WORD</p>
+      <ul class="notes">
+        <li>Samples are small: the 10 newest posts in each 2- to 3-hour slice from 13:00 to 24:00 UTC, about 45 posts per term and day. AI coding agents, not people, coded stance and topic. Treat the percentages as rough.</li>
+        <li>Repeat posting by a few accounts is not evidence of a campaign across many accounts, and this check does not look into who the accounts are. The sample cannot say how much of the daily rise they account for.</li>
+        <li>Full method and results: <a href="${doc}" rel="noopener">docs/OCT20-CHECK.md</a>.</li>
       </ul>
     </section>`;
 }
