@@ -64,7 +64,7 @@ Emma asked for reporting from trans-positive outlets and trans journalists. Thes
 
 ### Three October polls (added 20 November 2026)
 
-Erin Reed, "Trio Of Polls Spell Disaster For GOP Over Anti-Trans Ads", Erin in the Morning, 20 October 2026 (pasted by Emma; its URL could not be found, so the site names it without a link). Each poll was checked against its own topline PDF:
+Erin Reed, "Trio Of Polls Spell Disaster For GOP Over Anti-Trans Ads", Erin in the Morning, 20 October 2026 (pasted by Emma, who also supplied its [URL](https://www.erininthemorning.com/p/trio-of-polls-spell-disaster-for)). Each poll was checked against its own topline PDF:
 
 - **Navigator Research** (Global Strategy Group and GBAO), 1 to 5 October 2026, 1,375 total interviews with a 1,000 base, registered voters, margin of error ±3.1 points. Asked to pick up to five of 20 issues "most important for the President and Congress to focus on", 4% picked transgender issues, last of the 20; by party 5% Democrats, 3% independents, 4% Republicans. [Topline, page 6](https://navigatorresearch.org/wp-content/uploads/2026/10/Navigator-Toplines-10.05.2026.pdf).
 - **AP-NORC**, 8 to 12 October 2026, 1,119 adults, margin of error ±3.9 points. "Thinking about voting in the upcoming election, how important are each of the following issues?": transgender issues 11% one of the most important, 38% important but not one of the most, 51% not an important issue. The highest "not an important issue" share for any other issue listed was 14% (immigration). [Topline](https://apnorc.org/wp-content/uploads/2026/10/October-2026-Topline-Issues.pdf).

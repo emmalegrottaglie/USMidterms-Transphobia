@@ -601,7 +601,7 @@ const CONTEXT_SOURCES = [
   { id: 'navigator', name: 'Navigator Research toplines, 1 to 5 October 2026', url: 'https://navigatorresearch.org/wp-content/uploads/2026/10/Navigator-Toplines-10.05.2026.pdf' },
   { id: 'apnorc', name: 'AP-NORC October 2026 topline, issues', url: 'https://apnorc.org/wp-content/uploads/2026/10/October-2026-Topline-Issues.pdf' },
   { id: 'ipsos', name: 'ABC News, Washington Post and Ipsos topline, 9 to 13 October 2026', url: 'https://www.ipsos.com/sites/default/files/ct/news/documents/2026-10/ABC-Post-Ipsos%20Trend%20Topline%2010.18.pdf' },
-  { id: 'eitm-oct20', name: 'Erin Reed, “Trio Of Polls Spell Disaster For GOP Over Anti-Trans Ads”, Erin in the Morning, 20 October 2026', url: '' },
+  { id: 'eitm-oct20', name: 'Erin Reed, “Trio Of Polls Spell Disaster For GOP Over Anti-Trans Ads”, Erin in the Morning, 20 October 2026', url: 'https://www.erininthemorning.com/p/trio-of-polls-spell-disaster-for' },
   { id: 'eitm-nov4', name: 'Erin Reed, Erin in the Morning, 4 November 2026', url: 'https://www.erininthemorning.com/p/a-stunning-rebuke-of-anti-trans-politics' },
   { id: 'eitm-nov16', name: 'Erin Reed, Erin in the Morning, 16 November 2026', url: 'https://www.erininthemorning.com/p/voters-found-republican-trans-obsession' },
   { id: 'serano', name: 'Julia Serano, “Shifting Positions”, 5 November 2026', url: 'https://juliaserano.substack.com/p/shifting-positions-democrats-transgender' },
