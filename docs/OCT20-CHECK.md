@@ -1,6 +1,6 @@
 # What drove the rise on 20 October 2026
 
-A one-off check, outside the frozen study. Emma approved up to $2.10 on 20 November 2026. It cost $1.885: 369 posts read at $0.005, plus 4 full-archive count pages at $0.010. It used 44 requests of the shared daily cap.
+A one-off check, outside the frozen study. Emma approved up to $2.10 on 20 November 2026. It cost $1.885: 369 posts read at $0.005, plus 4 full-archive count pages at $0.010. It used 44 requests of the shared daily cap. A second pass the same day counted the accounts behind the copied texts (see "Who posted the copies").
 
 ## The question
 
@@ -39,6 +39,12 @@ About four in five posts are replies on both days. The coders returned codes for
 - **Generic lists.** Lists of "Democrats'" positions, repeated 3 and 4 times; the second appears at 14:00 and 23:00 UTC. They run sex changes for children together with open borders, DEI and other grievances.
 - **Other.** One post about Black voters and the Democratic Party's history, repeated 3 times at 16:00 UTC.
 
+**Who posted the copies.** A second pass on 20 November (approved by Emma the same day) re-read the same 20 slices for 20 October, 187 posts, the same number as the first pass, adding only each post's author ID. No user profiles were requested. Author IDs stayed in memory and only counts were kept. Texts were grouped when their words matched exactly, ignoring mentions, links, punctuation and spacing.
+- 27 posts fall into 7 copy groups. **Each group comes from a single account**, and no account appears in more than one group. The accounts posted their text 8, 5, 4, 3, 3, 2 and 2 times.
+- The groups match the ones the coders found: the El-Sayed attack (8 times, one account, 16:00 UTC, all replies), the Talarico attack (5 exact copies, one account, 18:00 UTC), the "Democrats:" lists (4 and 3 times, one account each), and the post about Black voters (3 times, one account).
+- Outside the copies, posts come from many accounts: the 187 posts have 152 distinct authors, and the 160 posts outside the copy groups have 145.
+- Cost: 187 posts at $0.005, $0.935, unless Twitter's rule that a resource read twice in the same UTC day is billed once applies (both passes ran on 20 November UTC). It used 20 requests of the shared daily cap.
+
 **Topics new on 20 October:**
 - **Texas Senate.** Posts about the race rose from 3 to 13 in "men in women's sports", including attacks on Talarico's line "God is nonbinary".
 - **WNBA.** In "biological male", 11 posts react to a WNBA statement that only women are eligible, and to claims about two named players.
@@ -54,6 +60,7 @@ About four in five posts are replies on both days. The coders returned codes for
 ## What this shows and does not show
 
 - **No single news event.** The rise on 20 October has no single news hook. It is a mix of election attacks (Texas and Michigan Senate, generic lists about Democrats), reply storms, and two news stories (the WNBA and the mailers).
-- **Copy-pasted replies.** About 15% of sampled posts on 20 October are copy-pasted text, against about 1% the day before, mostly replies posted in tight clusters. That is a known sign of organised or scripted replying.
-- **Not proof of coordination across accounts.** Without author data we cannot tell whether a copy group came from one account pasting the same reply many times or from many accounts. Counting distinct authors among the copies would answer this, but it needs author reads ($0.010 per user) and a decision on handling account data in memory.
+- **Copy-pasted replies, one account per text.** About 15% of sampled posts on 20 October are copy-pasted text, against about 1% the day before, mostly replies posted in tight clusters. The author count shows each copied text came from one account pasting the same reply many times, not from many accounts sharing a script. Seven accounts did this in the sample.
+- **No sign of a shared script in this sample.** Nothing here shows several accounts posting the same text. Whether the seven repeat posters are linked to each other, or to a campaign, cannot be told from counts and is not checked: looking further into those accounts would mean tracking private individuals, which this project does not do.
+- **The rise is broad.** Outside the copies, almost every sampled post comes from a different account (145 accounts for 160 posts). The sample cannot say how much of the daily rise the repeat posters account for, because each slice holds only its 10 newest posts.
 - **Small samples.** Samples are small (about 45 posts per term and day), slices are weighted to their latest posts, and the coders were AI agents. Treat the percentages as rough.
