@@ -54,3 +54,4 @@ Emma asked for reporting from trans-positive outlets and trans journalists. Thes
 
 - America PAC's "$100 million" (Axios, via Erin in the Morning): it covers the PAC's whole Senate push, not anti-trans ads alone.
 - The Human Rights Campaign's "$280 million" (AdImpact, broadcast and connected TV) and the Transgender Law Center's "over $400 million" (quoted by Prism, no source given): different scopes, and the site does not add or compare totals.
+- LGBTQ Nation (Alex Bollinger, 28 October 2026), "Republicans have spent nearly $200 million on anti-trans ads in the midterms" (pasted by Emma on 20 November 2026). Its figures ($183M and 217,000 airings up to 25 October, $151M in 2024, $58M against Talarico, $11M by Democrats) are AdImpact's via AP, already on the site from AP. It also says Republicans sent the fake Texas mailers, which no other reporting read here has established (the sender was still unknown on 23 October), so nothing from it is added.
