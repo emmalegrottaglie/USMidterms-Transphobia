@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en" data-palette="term-navy" data-mode="dark">
+<head>
+<meta charset="utf-8">
+<script>
+  // Light or dark before the first paint: the reader's saved choice, else the system setting.
+  (function () {
+    var d = document.documentElement, m = null;
+    try { m = localStorage.getItem('mode'); } catch (e) { /* storage unavailable */ }
+    if (m !== 'light' && m !== 'dark') m = null;
+    d.dataset.mode = m || (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  })();
+</script>
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Anti-trans Rhetoric and the 2026 US Midterms</title>
+<meta name="description" content="Explicit anti-trans term volume on Twitter around political events, against its normal level, with the data for download.">
+<link rel="stylesheet" href="design/terminal.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<a class="skip" href="#view">Skip to content</a>
+<a class="skip" href="#nav">Skip to sections</a>
+<header>
+  <div class="band"><h1 id="title" tabindex="-1">ANTI-TRANS RHETORIC AND THE 2026 US MIDTERMS</h1></div>
+  <div class="sub"><span id="sub-left">TWITTER · ENGLISH · DATA TO —</span><span class="sub-right"><span id="provisional"></span>
+    <button class="toggle" id="mode" type="button" aria-pressed="false">LIGHT</button></span></div>
+</header>
+<main>
+  <section id="boot" class="boot" aria-live="polite">
+    <div class="boot-line cmd">❯ monitor --study</div>
+    <div class="boot-line" id="boot-step">FETCHING STUDY DATA</div>
+  </section>
+  <div id="view" tabindex="-1" hidden></div>
+</main>
+<footer class="end"><span id="end-left">END TRANSMISSION</span><span>SOURCE: TWITTER API POST COUNTS</span></footer>
+<nav class="nav" id="nav" tabindex="-1" aria-label="Sections">
+  <a href="#study" data-route="study">Study</a><a href="#terms" data-route="terms">Terms</a><a href="#methods" data-route="methods">Methods</a><a href="#context" data-route="context">Context</a><a href="#data" data-route="data">Data</a>
+</nav>
+<script src="app.js" type="module"></script>
+</body>
+</html>
