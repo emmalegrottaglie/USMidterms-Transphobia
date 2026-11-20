@@ -346,6 +346,8 @@ function renderStudy() {
       <p class="note">${M.phaseDates} · ${M.baseline}</p>
     </div>
 
+    ${adsNote()}
+
     <div class="hero">
       <div class="hero-row">
         <div class="hero-value${isNum(heroV) ? '' : ' unknown'}">${n1(heroV)}</div>
@@ -614,6 +616,24 @@ const CONTEXT_GROUPS = [
     ['GLAAD and Morning Consult poll', '2,026 registered voters were asked on 4 to 6 November 2026; 1,725 of them voted in the midterms. Of those voters, 37% said they were less likely and 18% more likely to support a candidate who ran ads about transgender issues.', 'metro'],
   ]],
 ];
+
+// The study page's short version of the Context tab: the scale of the ad campaign the
+// counts ran alongside. Same checked items and sources; it claims no effect on posting.
+function adsNote() {
+  const src = (id) => CONTEXT_SOURCES.find((s) => s.id === id);
+  const cite = (id) => { const s = src(id); return s ? `<span class="fact-src">SOURCE: ${outLink(s.url, s.name)}</span>` : ''; };
+  return `<section class="outside" aria-labelledby="ads-label">
+      <div class="outside-label" id="ads-label"><span class="chip three">OUTSIDE RESEARCH</span><span>THE AD CAMPAIGN THESE COUNTS RAN ALONGSIDE · NOT THIS PROJECT’S DATA</span></div>
+      <ul class="facts">
+        <li><b>Republican spending.</b> Republicans aired transgender-themed TV ads about 217,000 times, for an estimated $183M, up to 25 October 2026 (AdImpact, reported by AP), against about $151M at the same point in 2024. ${cite('ap')}</li>
+        <li><b>Elon Musk’s money.</b> Musk gave the Senate Leadership Fund $158M in September 2026, and the fund passed the same amounts to Texas PAC, which AP describes as largely funded by Musk. Transgender-themed ads in the Texas Senate race cost an estimated $58M up to 25 October. Each of America PAC’s first midterm ads, in September, was about transgender issues. ${cite('cnn')} ${cite('ap')} ${cite('advocate')}</li>
+      </ul>
+      <ul class="notes">
+        <li>These figures come from other organisations. This project counts Twitter posts; the charts below show when the language rose and fell alongside the campaign, not whether the ads caused it.</li>
+        <li>More on the <a href="#context">Context</a> tab.</li>
+      </ul>
+    </section>`;
+}
 
 function renderContext() {
   const src = (id) => CONTEXT_SOURCES.find((s) => s.id === id);
