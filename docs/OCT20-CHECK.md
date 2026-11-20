@@ -57,6 +57,8 @@ About four in five posts are replies on both days. The coders returned codes for
 - On 21 October there were 22 such minutes, including runs for child mutilation from 04:16 to 04:39 UTC and for transing kids from 21:13 to 21:18 UTC.
 - The four terms do not burst together: on each of the three days, minute-by-minute correlations between terms are between -0.02 and 0.13.
 
+**Outside timing, a lead only.** Early voting in Texas began on 19 October 2026 ([Fox 4](https://www.fox4news.com/election/texas-early-voting-begins-2026)). The fake "Texas Transgender Student Union" mailers began arriving at the same time, and conservatives began posting about them that week (LGBTQ Nation, 23 October 2026, in docs/CONTEXT-ADS.md); the mailers appear in the 20 October "transing kids" sample. That fits the Texas Senate and mailer posts in the sample, but the rise was not limited to Texas, and nothing checked here ties the step to either.
+
 ## What this shows and does not show
 
 - **No single news event.** The rise on 20 October has no single news hook. It is a mix of election attacks (Texas and Michigan Senate, generic lists about Democrats), reply storms, and two news stories (the WNBA and the mailers).

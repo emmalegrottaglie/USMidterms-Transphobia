@@ -591,8 +591,16 @@ function renderMethods() {
 }
 
 // ── Context tab: outside research, kept apart from our measurements ───────────
-// Only the items spot-checked on their pages on 18 November 2026 (docs/CONTEXT-ADS.md).
+// Only the items checked on their source pages on 18 or 20 November 2026 (docs/CONTEXT-ADS.md).
 const CONTEXT_SOURCES = [
+  { id: 'uncloseted', name: 'Uncloseted Media with The 19th (Hope Pisoni), 21 October 2026', url: 'https://unclosetedmedia.com/p/how-republicans-manufactured-anti' },
+  { id: 'lgbtqn-wnba', name: 'LGBTQ Nation (Alex Bollinger), 13 October 2026, on GUDEA’s analysis', url: 'https://www.lgbtqnation.com/2026/10/this-summers-wnba-trans-debate-was-pushed-on-social-media-users-for-money-report-suggests/' },
+  { id: 'lgbtqn-mailers', name: 'LGBTQ Nation (John Russell), 23 October 2026, citing The Advocate', url: 'https://www.lgbtqnation.com/2026/10/mystery-mailers-impersonating-trans-org-provoke-conservative-outrage-the-org-is-fighting-back/' },
+  { id: 'lgbtqn-harm', name: 'LGBTQ Nation (Greg Owen), 9 October 2026, on a University of Melbourne study in Frontiers in Public Health', url: 'https://www.lgbtqnation.com/2026/10/the-flood-of-online-hate-is-harming-trans-nonbinary-peoples-mental-health-new-study-says/' },
+  { id: 'eitm-nov4', name: 'Erin Reed, Erin in the Morning, 4 November 2026', url: 'https://www.erininthemorning.com/p/a-stunning-rebuke-of-anti-trans-politics' },
+  { id: 'eitm-nov16', name: 'Erin Reed, Erin in the Morning, 16 November 2026', url: 'https://www.erininthemorning.com/p/voters-found-republican-trans-obsession' },
+  { id: 'serano', name: 'Julia Serano, “Shifting Positions”, 5 November 2026', url: 'https://juliaserano.substack.com/p/shifting-positions-democrats-transgender' },
+  { id: 'tribune', name: 'The Texas Tribune (Ayden Runnels), 14 October 2026', url: 'https://www.texastribune.org/2026/10/14/texas-transgender-texts-cease-desist/' },
   { id: 'ap', name: 'AP (Peoples and Kessler), 28 October 2026, republished by News4JAX', url: 'https://www.news4jax.com/news/politics/2026/10/28/republicans-emphasize-transgender-ads-putting-cultural-issues-over-voters-economic-anxiety/' },
   { id: 'wmp', name: 'Wesleyan Media Project, release of 13 August 2026', url: 'https://mediaproject.wesleyan.edu/releases-081326/' },
   { id: 'cnn', name: 'CNN, 16 October 2026, republished by KRDO', url: 'https://krdo.com/news/2026/10/16/musk-contributed-more-than-150-million-to-bolster-gop-in-texas-senate-race-filings-show/' },
@@ -616,6 +624,22 @@ const CONTEXT_GROUPS = [
   ]],
   ['Voters', [
     ['GLAAD and Morning Consult poll', '2,026 registered voters were asked on 4 to 6 November 2026; 1,725 of them voted in the midterms. Of those voters, 37% said they were less likely and 18% more likely to support a candidate who ran ads about transgender issues.', 'metro'],
+    ['Human Rights Campaign poll by GQR, reported by Erin Reed', 'After the election, 65% of voters said they wanted to hear less in campaigns about “trans athletes and surgeries” and 14% more. 58% agreed that Republicans’ “obsession” with transgender people and children is “strange and over the top”. The article gives no sample size or fieldwork dates.', 'eitm-nov16'],
+  ]],
+  ['On Twitter', [
+    ['Uncloseted Media and The 19th', 'An analysis of posts attacking James Talarico on Twitter after he won the Texas Democratic Senate primary on 3 March 2026. In the three days before the win the newsrooms found 4 posts about his positions on trans issues; in the 26 hours after it, 182 anti-trans posts attacking him. Between 10 p.m. ET on 3 March and 11 a.m. ET on 4 March they found 48 posts using similar talking points and none supporting trans people. Of the posts analysed, 12.1% came from accounts tied to the Republican Party or the Trump administration, 18.7% from right-wing media figures and 18.1% from influencers and commentators. The article does not describe how the posts were found, and it does not conclude that the attacks were coordinated. These posts are from March, before this project’s collection began.', 'uncloseted'],
+    ['GUDEA, reported by LGBTQ Nation', 'The data firm GUDEA analysed 188,631 posts about trans women in the WNBA from 20 July to 12 August 2026; 99% were on Twitter. Accounts it calls “non-typical” (high-visibility influencers, pundits and aggregators) were 3.57% of participants but wrote 16.75% of the posts. GUDEA reads this as influencers pushing the topic for engagement to an audience that did not share the interest. The article does not describe how accounts were classified. The posts are from before this project’s collection began; a WNBA statement on eligibility drove part of the “biological male” posts sampled on 20 October.', 'lgbtqn-wnba'],
+  ]],
+  ['Fake messages in a trans group’s name', [
+    ['Texts in Texas', 'Texts promoting the Transgender Education Network of Texas’s guides for trans students were sent from at least three numbers on the evenings of 12 and 13 October 2026, and appeared aimed at self-identified Republicans. The group said it did not send them and did not know who did, and sent a cease-and-desist letter to two messaging companies. A Republican state representative asked the attorney general to investigate the group.', 'tribune'],
+    ['Mailers in Texas', 'About a week after the texts, a “Texas Trans & LGBTQ+ Student Resource Guide” from a “Texas Transgender Student Union”, an LLC formed in Wyoming on 2 September 2026 with no online presence, began arriving in Texas mailboxes, at the start of early voting on 19 October. Conservatives began posting about it on social media that week. The guide carried the Transgender Education Network of Texas’s web address; the group said it did not send it. On 22 October its lawyer said the group believes the texts and mailers are one campaign by a single payer, aimed at Republicans and timed to early voting, and the group asked a court to allow depositions to find out who is behind it. The sender had not been identified.', 'lgbtqn-mailers'],
+  ]],
+  ['Harm to trans people', [
+    ['University of Melbourne study, reported by LGBTQ Nation', 'A survey of 807 trans and gender-diverse Australians aged 16 and over. More than 70% had seen or heard anti-trans stigma online several times a week in the previous month. Compared with those who saw it less often, they were 33% more likely to report suicidal thoughts, 38% more likely to report self-harm and 43% more likely to report planning suicide. The study is from Australia, not the US, and does not measure Twitter.', 'lgbtqn-harm'],
+  ]],
+  ['Trans writers on the campaign', [
+    ['Erin Reed, Erin in the Morning', 'Reed, a trans journalist, tracked 160 races with trans implications and counted 107 won by the trans-supportive side and 53 not, as of the morning after the election. The article does not describe its method, and some races had not been called.', 'eitm-nov4'],
+    ['Julia Serano', 'Serano, a trans writer, documents Democratic candidates, including Senate and governor nominees, who distanced themselves from trans rights in statements and ads, most of them in early September 2026. She notes the statements came within a week or two of one another, which hinted at coordination between campaigns, but says no evidence of it has come to light and that it may have been a snowball effect.', 'serano'],
   ]],
 ];
 
@@ -663,12 +687,12 @@ function oct20Note() {
 function renderContext() {
   const src = (id) => CONTEXT_SOURCES.find((s) => s.id === id);
   $('view').innerHTML = `
-    ${tabHead('Context · anti-trans political ads, 2026 midterms',
-      'Outside research on the anti-trans ad campaign around the election. These figures come from other organisations, not from this project’s Twitter counts.')}
+    ${tabHead('Context · anti-trans politics, 2026 midterms',
+      'Outside research and reporting on the anti-trans campaign around the election: ads, online attacks, polls, and the views of trans writers. These figures come from other organisations, not from this project’s Twitter counts.')}
     <section class="outside" aria-labelledby="outside-label">
       <div class="outside-label" id="outside-label"><span class="chip three">OUTSIDE RESEARCH</span><span>NOT THIS PROJECT’S DATA · NOT COMPARED WITH OUR COUNTS</span></div>
       <ul class="notes">
-        <li>Each item was checked by hand on its source page on 18 November 2026. Items from the original research that were not checked are left out.</li>
+        <li>Each item was checked on its source page, or on a copy of it, on 18 or 20 November 2026. Items that could not be checked, including pages that refused to load, are left out.</li>
         <li>The figures come from different sources with different scopes and dates. They are not added together.</li>
         <li>This project counts posts on Twitter. It does not measure advertising, and these figures are not part of any chart.</li>
       </ul>
