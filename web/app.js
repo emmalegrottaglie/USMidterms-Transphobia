@@ -597,6 +597,7 @@ const CONTEXT_SOURCES = [
   { id: 'lgbtqn-wnba', name: 'LGBTQ Nation (Alex Bollinger), 13 October 2026, on GUDEA’s analysis', url: 'https://www.lgbtqnation.com/2026/10/this-summers-wnba-trans-debate-was-pushed-on-social-media-users-for-money-report-suggests/' },
   { id: 'lgbtqn-mailers', name: 'LGBTQ Nation (John Russell), 23 October 2026, citing The Advocate', url: 'https://www.lgbtqnation.com/2026/10/mystery-mailers-impersonating-trans-org-provoke-conservative-outrage-the-org-is-fighting-back/' },
   { id: 'lgbtqn-harm', name: 'LGBTQ Nation (Greg Owen), 9 October 2026, on a University of Melbourne study in Frontiers in Public Health', url: 'https://www.lgbtqnation.com/2026/10/the-flood-of-online-hate-is-harming-trans-nonbinary-peoples-mental-health-new-study-says/' },
+  { id: 'glaad', name: 'GLAAD, election results statement, 4 November 2026', url: 'https://glaad.org/2026-midterm-election-results-anti-trans-fearmongering-fails-as-pro-equality-candidates-win-nationwide/' },
   { id: 'eitm-nov4', name: 'Erin Reed, Erin in the Morning, 4 November 2026', url: 'https://www.erininthemorning.com/p/a-stunning-rebuke-of-anti-trans-politics' },
   { id: 'eitm-nov16', name: 'Erin Reed, Erin in the Morning, 16 November 2026', url: 'https://www.erininthemorning.com/p/voters-found-republican-trans-obsession' },
   { id: 'serano', name: 'Julia Serano, “Shifting Positions”, 5 November 2026', url: 'https://juliaserano.substack.com/p/shifting-positions-democrats-transgender' },
@@ -614,6 +615,7 @@ const CONTEXT_GROUPS = [
     ['Wesleyan Media Project', 'The release names attacks on transgender people as the tenth most common topic in pro-Republican House ads, in 14% of airings, from 1 January 2025 to 2 August 2026. Its Table 2 labels the matching row “LGBTQ Issues / Rights” (13.9%), listed about twelfth.', 'wmp'],
     ['Metro Weekly', 'About $187M across nine states: Arizona, Colorado, Georgia, Missouri, Nebraska, Ohio, Texas, Washington and Wisconsin. The article names no data source for this figure.', 'metro'],
     ['Human Rights Campaign estimate, reported by Metro Weekly', 'The Human Rights Campaign estimated that “nearly $400 million was spent nationwide on anti-transgender ads this election cycle”. This is a separate estimate with a different scope from the nine-state figure above; the two are not compared or added.', 'metro'],
+    ['GLAAD', 'GLAAD’s election statement gives over $187M spent on anti-trans campaign ads, including $78M in Texas and $26M in Ohio. It names no data source for these figures, and their scope is not stated, so they are not compared with the AdImpact figures.', 'glaad'],
   ]],
   ['Who paid, and where', [
     ['Texas Senate race', 'Transgender-themed ads aired an estimated 50,000 times, at a cost of $58M, up to 25 October 2026 (AdImpact, reported by AP). AP describes Texas PAC as largely funded by Elon Musk.', 'ap'],
@@ -636,6 +638,9 @@ const CONTEXT_GROUPS = [
   ]],
   ['Harm to trans people', [
     ['University of Melbourne study, reported by LGBTQ Nation', 'A survey of 807 trans and gender-diverse Australians aged 16 and over. More than 70% had seen or heard anti-trans stigma online several times a week in the previous month. Compared with those who saw it less often, they were 33% more likely to report suicidal thoughts, 38% more likely to report self-harm and 43% more likely to report planning suicide. The study is from Australia, not the US, and does not measure Twitter.', 'lgbtqn-harm'],
+  ]],
+  ['Results', [
+    ['Trans candidates elected, listed by GLAAD', 'Alabama elected its first out trans state lawmaker, Allison Montgomery. Washington elected Jaelynn Scott, the first out Black trans woman in its state House. Michigan elected Joanna Whaley, a trans woman, to its legislature. Georgia elected Bentley Hudgins, its first out trans and nonbinary lawmaker. Sarah McBride, the first trans woman elected to Congress, was re-elected.', 'glaad'],
   ]],
   ['Trans writers on the campaign', [
     ['Erin Reed, Erin in the Morning', 'Reed, a trans journalist, tracked 160 races with trans implications and counted 107 won by the trans-supportive side and 53 not, as of the morning after the election. The article does not describe its method, and some races had not been called.', 'eitm-nov4'],
